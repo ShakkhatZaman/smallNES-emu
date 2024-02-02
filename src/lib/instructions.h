@@ -27,9 +27,9 @@ void stack_push(CPU *cpu, Byte data);
 
 Byte stack_pop(CPU *cpu);
 
-Byte read_byte(CPU *cpu, Word address);
+Byte cpu_read_byte(CPU *cpu, Word address);
 
-Byte write_byte(CPU *cpu, Word address, Byte data);
+Byte cpu_write_byte(CPU *cpu, Word address, Byte data);
 
 /*Addressing modes*/
 

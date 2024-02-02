@@ -2,6 +2,8 @@
 #define CPU_TYPES_H
 
 #include <stdint.h>
+#include "ppu.h"
+#include "mapper.h"
 
 #define NOT_ENOUGH_CYCLES 0
 
@@ -14,9 +16,11 @@ enum {
 typedef uint8_t Byte;
 typedef uint16_t Word;
 
-typedef struct Mem {
-	Byte Data[MEM_SIZE];
-} Mem;
+typedef struct {
+	Byte RAM[2048]; 			// 2KB of RAM ->		$0000 - $07FF
+	Byte APU_registers[18]; 	// APU registers ->		$4000 - $4017
+	Mapper *mapper;
+} CPU_Bus;
 
 typedef struct CPU {
 	Word PC; // Program counter
@@ -34,8 +38,11 @@ typedef struct CPU {
 	Byte V : 1; // Overfloaw flag
 	Byte N : 1; // Negative flag
 	
-	// Memory pointer
-	struct Mem *pMem;
+	// Bus pointer
+	CPU_Bus *p_Bus;
+
+	// PPU pointer
+	PPU *p_ppu;
 
 	// Helper variables
 	Byte temp_byte;
@@ -43,10 +50,16 @@ typedef struct CPU {
 	Byte current_mode;
 } CPU;
 
-void reset(CPU *cpu, struct Mem *pM);
+void reset(CPU *cpu, CPU_Bus *cpuBus, PPU *p_PPU, PPU_Bus *ppu_bus);
 
 void execute(CPU *cpu, int cycles);
 
 int execute_instruction(CPU *cpu, Byte ins, int cycles, Byte decr);
+
+Byte load_cartrigde_to_cpu(CPU *cpu);
+
+void load_mapper_to_cpu(CPU * cpu, Mapper * mapper);
+
+void exit_cpu(CPU *cpu, int argc);
 
 #endif

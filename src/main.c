@@ -1,5 +1,7 @@
 #include <stdio.h>
 #include "lib/6502.h"
+#include "lib/ppu.h"
+#include "lib/cartridge.h"
 
 int main(int argc, char *argv[]){
 	int cycle_count;
@@ -10,16 +12,23 @@ int main(int argc, char *argv[]){
 	struct CPU cpu;
 
 	printf("Initializing Memory...\n");
-	struct Mem mem;
+	CPU_Bus cpu_bus;
+	PPU ppu;
+	PPU_Bus ppu_bus;
 
 	printf("Reseting CPU...\n");
-	reset(&cpu, &mem);
+	reset(&cpu, &cpu_bus, &ppu, &ppu_bus);
 	
+	if (argc > 1){
+		Mapper mapper;
+		load_cartridge(argv[1], &mapper);
+		load_mapper_to_cpu(&cpu, &mapper);
+	}
+
 	printf("Starting Execution...\n");
 	execute(&cpu, cycle_count);
 	
-	printf("%d %d %d\n", cpu.A, mem.Data[0x01ff], mem.Data[0x01fe]);
-
+	exit_cpu(&cpu, argc);
 	printf("Exiting Emulator\n");
 	return 0;
 }
