@@ -3,17 +3,19 @@
 
 #include "6502.h"
 
-#define NULL_INS {NULL_M, NULL_OP, 0, 0}
+#define NULL_INS {NUL, NUL}
 
 /*Instruction struct*/
 typedef struct{
 	Byte (*address_mode)(CPU *);
 	Byte (*operation)(CPU *);
-	Byte min_cycle_count;
-	Byte max_cycle_count;
 } Ins;
 
 extern const Ins ins_table[256];
+
+extern int total_cycles;
+
+extern Byte cycle_dec;
 
 /* Helper fucntions */
 
@@ -58,8 +60,6 @@ Byte ZP0(CPU *cpu);
 Byte ZPX(CPU *cpu);
 
 Byte ZPY(CPU *cpu);
-
-Byte NULL_M(CPU *cpu);
 
 /*Operation functions*/
 
@@ -175,6 +175,6 @@ Byte TXS(CPU *cpu);
 
 Byte TYA(CPU *cpu);
 
-Byte NULL_OP(CPU *cpu);
+Byte NUL(CPU *cpu);
 
 #endif

@@ -54,7 +54,9 @@ void reset(CPU *cpu, CPU_Bus *cpuBus, PPU *p_PPU, PPU_Bus *ppu_bus);
 
 void execute(CPU *cpu, int cycles);
 
-int execute_instruction(CPU *cpu, Byte ins, int cycles, Byte decr);
+int execute_instruction(CPU *cpu, Byte ins);
+
+int cpu_clock(CPU *cpu);
 
 Byte load_cartrigde_to_cpu(CPU *cpu);
 

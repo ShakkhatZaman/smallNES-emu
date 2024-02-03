@@ -16,9 +16,8 @@ int load_cartridge(char* filename, Mapper *mapper){
 	
 	load_mapper_functions(mapper, Mapper_num);
 
-	if (header[6] & 0x04){
+	if (header[6] & 0x04)
 		fseek(nes_file, 512, SEEK_CUR);
-	}
 
 	uint64_t PRG_ROM_SIZE = get_PRG_ROM_size(header, format);
 	uint64_t CHR_ROM_SIZE = get_CHR_ROM_size(header, format);

@@ -23,10 +23,13 @@ int main(int argc, char *argv[]){
 		Mapper mapper;
 		load_cartridge(argv[1], &mapper);
 		load_mapper_to_cpu(&cpu, &mapper);
-	}
 
-	printf("Starting Execution...\n");
-	execute(&cpu, cycle_count);
+		printf("Starting Emulator...\n");
+		execute(&cpu, cycle_count);
+	}
+	else {
+		printf("No file to load from\n");
+	}
 	
 	exit_cpu(&cpu, argc);
 	printf("Exiting Emulator\n");

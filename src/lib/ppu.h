@@ -8,7 +8,6 @@ typedef uint8_t Byte;
 typedef uint16_t Word;
 
 typedef struct {
-	Byte Pattern[2][4096];	// 8KB for pattern tables ->	$0000 - $1FFF //programed by the cartridge
 	Byte Nametable[4][1024];// 4KB for nametables ->		$2000 - $2FFF
 	Byte Paletes[32];		// 32B for palettes ->			$3F00 - $3FFF
 	Mapper *mapper;
