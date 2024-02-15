@@ -1,6 +1,6 @@
 #include <math.h>
-#include <stdio.h>
 #include <stdint.h>
+#include <stdio.h>
 #include <stdlib.h>
 #include "cartridge.h"
 #include "mapper.h"
@@ -19,14 +19,16 @@ int load_cartridge(char* filename, Mapper *mapper){
 	if (header[6] & 0x04)
 		fseek(nes_file, 512, SEEK_CUR);
 
-	uint64_t PRG_ROM_SIZE = get_PRG_ROM_size(header, format);
-	uint64_t CHR_ROM_SIZE = get_CHR_ROM_size(header, format);
+	uint64_t PRG_ROM_SIZE = get_PRG_ROM_size(header, format, &mapper->PRG_ROM_banks);
+	uint64_t CHR_ROM_SIZE = get_CHR_ROM_size(header, format, &mapper->CHR_ROM_banks);
 
 	mapper->PRG_ROM_p = malloc(PRG_ROM_SIZE);
 	mapper->CHR_ROM_p = malloc(CHR_ROM_SIZE);
 
 	fread(mapper->PRG_ROM_p, 1, PRG_ROM_SIZE, nes_file);
 	fread(mapper->CHR_ROM_p, 1, CHR_ROM_SIZE, nes_file);
+	
+	fclose(nes_file);
 
 	return 0;
 }
@@ -50,7 +52,7 @@ uint16_t get_mapper_num(uint8_t header[]){
 	return Mapper_number;
 }
 
-uint64_t get_PRG_ROM_size(uint8_t header[], uint8_t format){
+uint64_t get_PRG_ROM_size(uint8_t header[], uint8_t format, uint8_t *num_banks) {
 	uint8_t num_PRG_ROM_bank = 0;
 	uint64_t PRG_ROM_unit = 0;
 
@@ -69,10 +71,11 @@ uint64_t get_PRG_ROM_size(uint8_t header[], uint8_t format){
 		PRG_ROM_unit = 16 * 1024; // 16KB
 		num_PRG_ROM_bank = header[4];
 	}
+	*num_banks = num_PRG_ROM_bank;
 	return (uint64_t) (num_PRG_ROM_bank * PRG_ROM_unit);
 }
 
-uint64_t get_CHR_ROM_size(uint8_t header[], uint8_t format){
+uint64_t get_CHR_ROM_size(uint8_t header[], uint8_t format, uint8_t *num_banks) {
 	uint8_t num_CHR_ROM_bank = 0;
 	uint64_t CHR_ROM_unit = 0;
 
@@ -91,10 +94,11 @@ uint64_t get_CHR_ROM_size(uint8_t header[], uint8_t format){
 		CHR_ROM_unit = 8 * 1024;
 		num_CHR_ROM_bank = header[5];
 	}
+	*num_banks = num_CHR_ROM_bank;
 	return (uint64_t) (num_CHR_ROM_bank * CHR_ROM_unit);
 }
 
 void free_cartridge(Mapper *mapper){
 	free(mapper->PRG_ROM_p);
-	free(mapper->PRG_ROM_p);
+	free(mapper->CHR_ROM_p);
 }

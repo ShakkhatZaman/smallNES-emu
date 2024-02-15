@@ -1,7 +1,7 @@
 #include <stdio.h>
-#include "lib/6502.h"
-#include "lib/ppu.h"
-#include "lib/cartridge.h"
+#include "include/6502.h"
+#include "include/ppu.h"
+#include "include/cartridge.h"
 
 int main(int argc, char *argv[]){
 	int cycle_count;
@@ -9,11 +9,11 @@ int main(int argc, char *argv[]){
 	scanf("%d", &cycle_count);
 
 	printf("Initializing CPU...\n");
-	struct CPU cpu;
+	CPU cpu;
+	PPU ppu;
 
 	printf("Initializing Memory...\n");
 	CPU_Bus cpu_bus;
-	PPU ppu;
 	PPU_Bus ppu_bus;
 
 	printf("Reseting CPU...\n");

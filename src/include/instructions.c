@@ -1,5 +1,4 @@
 #include <stdint.h>
-#include "6502.h"
 #include "instructions.h"
 #include "ppu.h"
 
@@ -44,26 +43,32 @@ Word fetch_word(CPU *cpu){
 
 Byte cpu_read_byte(CPU *cpu, Word address){
 	Byte data = 0x00;
-	if (address >= 0x0000 && address <= 0x1FFF) 		// Address inside CPU RAM 
-		data = cpu->p_Bus->RAM[address & 0x07FF];
+	// Address inside CPU RAM
+	if (address >= 0x0000 && address <= 0x1FFF)
+		data = cpu->p_Bus->RAM[address & 0x07FF];		// 2KB of RAM mirrored across 8KB
 
-	else if (address >= 0x2000 && address <= 0x3FFF)	// Address inside PPU registers
-		data = cpu_to_ppu_read(cpu->p_ppu, address);
+	// Address inside PPU registers
+	else if (address >= 0x2000 && address <= 0x3FFF)
+		data = cpu_to_ppu_read(cpu->p_ppu, address);	// Reading on the ppu registers
 	
-	else
-		data = cpu->p_Bus->mapper->cpu_read(cpu->p_Bus->mapper, address); // Address inside cartridge
+	// Address inside cartridge
+	else if (address <= 0xFFFF)
+		data = cpu->p_Bus->mapper->cpu_read(cpu->p_Bus->mapper, address);
 
 	return data;
 }
 
 Byte cpu_write_byte(CPU *cpu, Word address, Byte data){
-	if (address >= 0x0000 && address <= 0x1FFF)			// Address inside CPU RAM 
-		cpu->p_Bus->RAM[address & 0x07FF] = data;
-
-	else if (address >= 0x2000 && address <= 0x3FFF)	// Address inside PPU registers
-		cpu_to_ppu_write(cpu->p_ppu, address, data);
-
-	else
+	// Address inside CPU RAM
+	if (address >= 0x0000 && address <= 0x1FFF)
+		cpu->p_Bus->RAM[address & 0x07FF] = data; 		// 2KB of RAM mirrored across 8KB
+	
+	// Address inside PPU registers
+	else if (address >= 0x2000 && address <= 0x3FFF)
+		cpu_to_ppu_write(cpu->p_ppu, address, data);	// Writting on the ppu registers
+	
+	// Address inside cartridge
+	else if (address <= 0xFFFF)
 		cpu->p_Bus->mapper->cpu_write(cpu->p_Bus->mapper, address, data);
 	
 	return 0;
@@ -82,7 +87,6 @@ Byte stack_pop(CPU *cpu){
 void set_status_A(CPU *cpu){
 	cpu->Z = (cpu->A == 0); // Zero flag is set if A is Zero
 	cpu->N = (cpu->A & 0b10000000) ? 1 : 0;
-
 }
 
 void check_page_crossed(CPU *cpu){

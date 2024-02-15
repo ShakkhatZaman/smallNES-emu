@@ -4,7 +4,9 @@
 
 typedef struct Mapper{
 	uint16_t mapper_num;
+	uint8_t PRG_ROM_banks;
 	uint8_t *PRG_ROM_p;
+	uint8_t CHR_ROM_banks;
 	uint8_t *CHR_ROM_p;
 	uint8_t (*cpu_read)(struct Mapper *, uint16_t);
 	uint8_t (*cpu_write)(struct Mapper *, uint16_t, uint8_t);
@@ -12,7 +14,13 @@ typedef struct Mapper{
 	uint8_t (*ppu_write)(struct Mapper *, uint16_t, uint8_t);
 } Mapper;
 
+enum Mappers {
+	NROM = 0,
+};
+
 void load_mapper_functions(Mapper *mapper, uint16_t mapper_num);
 
-#endif // !MAPPER_H
+void load_NROM(Mapper *mapper);
+
+#endif // MAPPER_H
 

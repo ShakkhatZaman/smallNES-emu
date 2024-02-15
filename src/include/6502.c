@@ -1,22 +1,20 @@
 #include <stdio.h>
 #include "6502.h"
 #include "instructions.h"
-#include "ppu.h"
-#include "mapper.h"
 #include "cartridge.h"
 
-Byte cycle_dec;
-int total_cycles;
+Byte cycle_dec = 0;
+int total_cycles = 0;
 
-int cpu_clock(CPU *cpu){ //main function to check status of cpu
-	if (!total_cycles){
+int cpu_clock(CPU *cpu) { //main function to process status of cpu
+	if (!total_cycles) {
 		return 0; // exit emulator
 	}
 	total_cycles -= cycle_dec; // 1 clock has passed
 	return 0;
 }
 
-void reset(CPU *cpu, CPU_Bus *cpuBus, PPU *p_PPU, PPU_Bus *ppu_bus){
+void reset(CPU *cpu, CPU_Bus *cpuBus, PPU *p_PPU, PPU_Bus *ppu_bus) {
 	cpu->PC = 0xFFFC; 				// Initializing program counter at 0xFFFC
 	cpu->A = cpu->X = cpu->Y = 0;	// All registers to 0
 	cpu->D = 0;						// Setting Decimal flag to 0
@@ -30,12 +28,12 @@ void reset(CPU *cpu, CPU_Bus *cpuBus, PPU *p_PPU, PPU_Bus *ppu_bus){
 	cpu->temp_byte = cpu->temp_word = 0;
 }
 
-void load_mapper_to_cpu(CPU * cpu, Mapper * mapper){
+void load_mapper_to_cpu(CPU * cpu, Mapper * mapper) {
 	cpu->p_Bus->mapper = mapper;
 	cpu->p_ppu->p_Bus->mapper = mapper;
 }
 
-void execute(CPU *p_cpu, int cycles){
+void execute(CPU *p_cpu, int cycles) {
 	Byte op_code = NO_INS;
 	total_cycles = cycles;
 	cycle_dec = (total_cycles < 0) ? 0 : 1;
@@ -48,18 +46,14 @@ void execute(CPU *p_cpu, int cycles){
 	printf("Exiting after istruction %x", op_code);
 }
 
-int execute_instruction(CPU *cpu, Byte op_code){
+int execute_instruction(CPU *cpu, Byte op_code) {
 	Ins ins_struct = ins_table[op_code];
 	Byte additional_cycles = ins_struct.address_mode(cpu);
 	ins_struct.operation(cpu);
 	return 0;
 }
 
-Byte load_cartrigde_to_cpu(CPU *cpu){
-	return 0; //placeholder
-}
-
-void exit_cpu(CPU *cpu, int argc){
+void exit_cpu(CPU *cpu, int argc) {
 	if (argc > 1)
 		free_cartridge(cpu->p_Bus->mapper);
 	return;

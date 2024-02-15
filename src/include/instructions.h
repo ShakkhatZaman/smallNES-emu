@@ -13,10 +13,6 @@ typedef struct{
 
 extern const Ins ins_table[256];
 
-extern int total_cycles;
-
-extern Byte cycle_dec;
-
 /* Helper fucntions */
 
 Byte fetch_byte(CPU *cpu);
