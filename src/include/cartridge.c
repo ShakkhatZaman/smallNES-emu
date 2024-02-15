@@ -14,7 +14,8 @@ int load_cartridge(char* filename, Mapper *mapper){
 	uint16_t Mapper_num = get_mapper_num(header);
 	uint8_t format = get_format(header);
 	
-	load_mapper_functions(mapper, Mapper_num);
+	int mapper_status = load_mapper_functions(mapper, Mapper_num);
+	if (mapper < 0) return -1;
 
 	if (header[6] & 0x04)
 		fseek(nes_file, 512, SEEK_CUR);

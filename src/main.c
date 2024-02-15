@@ -3,36 +3,34 @@
 #include "include/ppu.h"
 #include "include/cartridge.h"
 
+CPU cpu;
+PPU ppu;
+CPU_Bus cpu_bus;
+PPU_Bus ppu_bus;
+int cycle_count = 0;
+int emulator_running = 0;
+
 int main(int argc, char *argv[]){
-	int cycle_count;
-	printf("Enter number of clock cycles: \n");
-	scanf("%d", &cycle_count);
-
-	printf("Initializing CPU...\n");
-	CPU cpu;
-	PPU ppu;
-
-	printf("Initializing Memory...\n");
-	CPU_Bus cpu_bus;
-	PPU_Bus ppu_bus;
-
-	printf("Reseting CPU...\n");
-	reset(&cpu, &cpu_bus, &ppu, &ppu_bus);
-	
-	if (argc > 1){
-		Mapper mapper;
-		load_cartridge(argv[1], &mapper);
-		load_mapper_to_cpu(&cpu, &mapper);
-
-		printf("Starting Emulator...\n");
-		execute(&cpu, cycle_count);
-	}
-	else {
+	if (argc < 1){
 		printf("No file to load from\n");
+		return -1;
 	}
-	
+
+	init_cpu(&cpu, &cycle_count);
+	reset(&cpu, &cpu_bus, &ppu, &ppu_bus);
+
+	Mapper mapper;
+	if (load_cartridge(argv[1], &mapper) < 0)
+		return -1;
+	load_mapper_to_cpu(&cpu, &mapper);
+
+	printf("Starting Emulator...\n");
+	while (emulator_running) {
+		execute(&cpu);
+	}
+
 	exit_cpu(&cpu, argc);
-	printf("Exiting Emulator\n");
+	printf("Exiting Emulator\n %d", cycle_count);
 	return 0;
 }
 

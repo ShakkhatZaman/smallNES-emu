@@ -52,13 +52,11 @@ typedef struct CPU {
 
 void reset(CPU *cpu, CPU_Bus *cpuBus, PPU *p_PPU, PPU_Bus *ppu_bus);
 
-void execute(CPU *cpu, int cycles);
+void init_cpu(CPU *p_cpu, int *cycles);
 
-int execute_instruction(CPU *cpu, Byte ins);
+void execute(CPU *p_cpu);
 
 int cpu_clock(CPU *cpu);
-
-Byte load_cartrigde_to_cpu(CPU *cpu);
 
 void load_mapper_to_cpu(CPU * cpu, Mapper * mapper);
 

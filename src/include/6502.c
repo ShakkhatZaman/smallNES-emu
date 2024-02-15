@@ -3,14 +3,10 @@
 #include "instructions.h"
 #include "cartridge.h"
 
-Byte cycle_dec = 0;
-int total_cycles = 0;
+int *total_cycles;
 
 int cpu_clock(CPU *cpu) { //main function to process status of cpu
-	if (!total_cycles) {
-		return 0; // exit emulator
-	}
-	total_cycles -= cycle_dec; // 1 clock has passed
+	*total_cycles += 1; // 1 clock has passed
 	return 0;
 }
 
@@ -28,29 +24,23 @@ void reset(CPU *cpu, CPU_Bus *cpuBus, PPU *p_PPU, PPU_Bus *ppu_bus) {
 	cpu->temp_byte = cpu->temp_word = 0;
 }
 
+void init_cpu(CPU *p_cpu, int *cycles) {
+	printf("Initializing CPU...\n");
+	total_cycles = cycles;
+	p_cpu->PC = fetch_word(p_cpu);
+}
+
 void load_mapper_to_cpu(CPU * cpu, Mapper * mapper) {
 	cpu->p_Bus->mapper = mapper;
 	cpu->p_ppu->p_Bus->mapper = mapper;
 }
 
-void execute(CPU *p_cpu, int cycles) {
-	Byte op_code = NO_INS;
-	total_cycles = cycles;
-	cycle_dec = (total_cycles < 0) ? 0 : 1;
-	p_cpu->PC = fetch_word(p_cpu);
-	while (cycles != 0){
-		op_code = fetch_byte(p_cpu);
-		cpu_clock(p_cpu);
-		execute_instruction(p_cpu, op_code);
-	}
-	printf("Exiting after istruction %x", op_code);
-}
-
-int execute_instruction(CPU *cpu, Byte op_code) {
+void execute(CPU *p_cpu) {
+	Byte op_code = fetch_byte(p_cpu);
+	cpu_clock(p_cpu);
 	Ins ins_struct = ins_table[op_code];
-	Byte additional_cycles = ins_struct.address_mode(cpu);
-	ins_struct.operation(cpu);
-	return 0;
+	Byte additional_cycles = ins_struct.address_mode(p_cpu);
+	ins_struct.operation(p_cpu);
 }
 
 void exit_cpu(CPU *cpu, int argc) {

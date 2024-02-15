@@ -19,7 +19,7 @@ const Ins ins_table[256] = {
 
 /*Helper functions */
 
-Byte fetch_byte(CPU *cpu){
+Byte fetch_byte(CPU *cpu) {
 	Word counter = cpu->PC;
 	cpu->PC = (counter == 0xFFFF) ? 0x8000 : counter + 1;
 	Byte data = 0x00;
@@ -29,11 +29,11 @@ Byte fetch_byte(CPU *cpu){
 	return data;
 }
 
-Word fetch_word(CPU *cpu){
+Word fetch_word(CPU *cpu) {
 	Word counter = cpu->PC;
 	Word data = 0x0000;
 	cpu->PC = (counter == 0xFFFF) ? 0x8001 : counter + 2;
-	if (counter >= 0x4020 && counter <= 0xFFFF){
+	if (counter >= 0x4020 && counter <= 0xFFFF) {
 		data = (Word) cpu->p_Bus->mapper->cpu_read(cpu->p_Bus->mapper, counter);
 		cpu_clock(cpu);
 		data |= ((Word) cpu->p_Bus->mapper->cpu_read(cpu->p_Bus->mapper, counter + 1)) << 8;
@@ -41,7 +41,7 @@ Word fetch_word(CPU *cpu){
 	return data;
 }
 
-Byte cpu_read_byte(CPU *cpu, Word address){
+Byte cpu_read_byte(CPU *cpu, Word address) {
 	Byte data = 0x00;
 	// Address inside CPU RAM
 	if (address >= 0x0000 && address <= 0x1FFF)
@@ -58,7 +58,7 @@ Byte cpu_read_byte(CPU *cpu, Word address){
 	return data;
 }
 
-Byte cpu_write_byte(CPU *cpu, Word address, Byte data){
+Byte cpu_write_byte(CPU *cpu, Word address, Byte data) {
 	// Address inside CPU RAM
 	if (address >= 0x0000 && address <= 0x1FFF)
 		cpu->p_Bus->RAM[address & 0x07FF] = data; 		// 2KB of RAM mirrored across 8KB
@@ -74,22 +74,22 @@ Byte cpu_write_byte(CPU *cpu, Word address, Byte data){
 	return 0;
 }
 
-void stack_push(CPU *cpu, Byte data){
+void stack_push(CPU *cpu, Byte data) {
 	cpu->p_Bus->RAM[cpu->SP] = data;
 	cpu->SP = (cpu->SP == 0x0100) ? 0x01FF : cpu->SP - 1;
 }
 
-Byte stack_pop(CPU *cpu){
+Byte stack_pop(CPU *cpu) {
 	cpu->SP = (cpu->SP == 0x01FF) ? 0x0100 : cpu->SP + 1;
 	return cpu->p_Bus->RAM[cpu->SP];
 }
 
-void set_status_A(CPU *cpu){
+void set_status_A(CPU *cpu) {
 	cpu->Z = (cpu->A == 0); // Zero flag is set if A is Zero
 	cpu->N = (cpu->A & 0b10000000) ? 1 : 0;
 }
 
-void check_page_crossed(CPU *cpu){
+void check_page_crossed(CPU *cpu) {
 	if ((cpu->PC & 0xFF00) == (cpu->temp_word & 0xFF00))
 		cpu_clock(cpu);
 	else {
@@ -101,7 +101,7 @@ void check_page_crossed(CPU *cpu){
 
 /*Addressing modes*/
 
-Byte ABS(CPU *cpu){
+Byte ABS(CPU *cpu) {
 	Word data_address = fetch_word(cpu);
 	cpu->temp_word = data_address;
 	cpu->temp_byte = cpu_read_byte(cpu, data_address);
@@ -109,7 +109,7 @@ Byte ABS(CPU *cpu){
 	return 0;
 }
 
-Byte ABX(CPU *cpu){
+Byte ABX(CPU *cpu) {
 	Word data_address = fetch_word(cpu);
 	cpu_clock(cpu);
 	Word data_address_x = data_address + cpu->X;
@@ -124,7 +124,7 @@ Byte ABX(CPU *cpu){
 	}
 }
 
-Byte ABY(CPU *cpu){
+Byte ABY(CPU *cpu) {
 	Word data_address = fetch_word(cpu);
 	cpu_clock(cpu);
 	Word data_address_y = data_address + cpu->Y;
@@ -139,30 +139,30 @@ Byte ABY(CPU *cpu){
 	}
 }
 
-Byte ACC(CPU *cpu){
+Byte ACC(CPU *cpu) {
 	cpu->temp_byte = cpu->A;
 	cpu->current_mode = 4;
 	return 0;
 }
 
-Byte IMP(CPU *cpu){
+Byte IMP(CPU *cpu) {
 	cpu->current_mode = 5;
 	return 0;
 }
 
-Byte IMM(CPU *cpu){
+Byte IMM(CPU *cpu) {
 	cpu->temp_byte = fetch_byte(cpu);
 	cpu->current_mode = 6;
 	return 0;
 }
 
-Byte IND(CPU *cpu){
+Byte IND(CPU *cpu) {
 	Word data_address = fetch_word(cpu);
 	Byte byte_data = cpu_read_byte(cpu, data_address);
 	cpu_clock(cpu);
 	Word word_data;
 
-	if ((data_address & 0x00FF) == 0x00FF){
+	if ((data_address & 0x00FF) == 0x00FF) {
 		word_data = (((Word) cpu_read_byte(cpu, data_address & 0xFF00)) << 8) | ((Word) byte_data);
 		cpu_clock(cpu);
 	}
@@ -176,7 +176,7 @@ Byte IND(CPU *cpu){
 	return 0;
 }
 
-Byte IZX(CPU *cpu){
+Byte IZX(CPU *cpu) {
 	Byte zp_data_address_x = fetch_byte(cpu);
 	cpu_clock(cpu);
 	zp_data_address_x += cpu->X;
@@ -192,7 +192,7 @@ Byte IZX(CPU *cpu){
 	return 0;
 }
 
-Byte IZY(CPU *cpu){
+Byte IZY(CPU *cpu) {
 	Byte zp_data_address_y = fetch_byte(cpu);
 	cpu_clock(cpu);
 	Word full_zp_address_y = (Word) zp_data_address_y;
@@ -212,7 +212,7 @@ Byte IZY(CPU *cpu){
 	}
 }
 
-Byte REL(CPU *cpu){
+Byte REL(CPU *cpu) {
 	Byte byte_offset = fetch_byte(cpu);
 	cpu->temp_byte = byte_offset;
 	Word target = cpu->PC;
@@ -223,7 +223,7 @@ Byte REL(CPU *cpu){
 	return 0;
 }
 
-Byte ZP0(CPU *cpu){
+Byte ZP0(CPU *cpu) {
 	Byte zero_page_address = fetch_byte(cpu);
 	cpu_clock(cpu);
 	cpu->temp_word = (Word) zero_page_address;
@@ -232,7 +232,7 @@ Byte ZP0(CPU *cpu){
 	return 0;
 }
 
-Byte ZPX(CPU *cpu){
+Byte ZPX(CPU *cpu) {
 	Byte zero_page_address_x = fetch_byte(cpu);
 	cpu_clock(cpu);
 	zero_page_address_x += cpu->X;
@@ -243,7 +243,7 @@ Byte ZPX(CPU *cpu){
 	return 0;
 }
 
-Byte ZPY(CPU *cpu){
+Byte ZPY(CPU *cpu) {
 	Byte zero_page_address_y = fetch_byte(cpu);
 	cpu_clock(cpu);
 	zero_page_address_y += cpu->Y;
@@ -256,7 +256,7 @@ Byte ZPY(CPU *cpu){
 
 /*Operation functions*/
 
-Byte ADC(CPU *cpu){
+Byte ADC(CPU *cpu) {
 	Word acc = (Word) cpu->A;
 	Word tmp_byte = (Word) cpu->temp_byte;
 	Word temp_sum = acc + tmp_byte + cpu->C;
