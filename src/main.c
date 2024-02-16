@@ -16,7 +16,6 @@ int main(int argc, char *argv[]){
 		return -1;
 	}
 
-	init_cpu(&cpu, &cycle_count);
 	reset(&cpu, &cpu_bus, &ppu, &ppu_bus);
 
 	Mapper mapper;
@@ -25,6 +24,8 @@ int main(int argc, char *argv[]){
 	load_mapper_to_cpu(&cpu, &mapper);
 
 	printf("Starting Emulator...\n");
+	init_cpu(&cpu, &cycle_count);
+	emulator_running = 1;
 	while (emulator_running) {
 		execute(&cpu);
 	}

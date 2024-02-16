@@ -17,17 +17,7 @@ extern const Ins ins_table[256];
 
 Byte fetch_byte(CPU *cpu);
 
-void set_status_A(CPU *cpu);
-
 Word fetch_word(CPU *cpu);
-
-void stack_push(CPU *cpu, Byte data);
-
-Byte stack_pop(CPU *cpu);
-
-Byte cpu_read_byte(CPU *cpu, Word address);
-
-Byte cpu_write_byte(CPU *cpu, Word address, Byte data);
 
 /*Addressing modes*/
 

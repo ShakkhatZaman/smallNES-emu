@@ -2,21 +2,6 @@
 #include "instructions.h"
 #include "ppu.h"
 
-const Ins ins_table[256] = {
-	{IMP, BRK}, {IZX, ORA}, {NUL, NUL}, {NUL, NUL}, {NUL, NUL}, {ZP0, ORA}, {ZP0, ASL}, {NUL, NUL}, {IMP, PHP}, {IMM, ORA}, {ACC, ASL}, {NUL, NUL}, {NUL, NUL}, {ABS, ORA}, {ABS, ASL}, {NUL, NUL},
-	{REL, BPL}, {IZY, ORA}, {NUL, NUL}, {NUL, NUL}, {NUL, NUL}, {ZPX, ORA}, {ZPX, ASL}, {NUL, NUL}, {IMP, CLC}, {ABX, ORA}, {NUL, NUL}, {NUL, NUL}, {NUL, NUL}, {ABX, ORA}, {ABX, ASL}, {NUL, NUL},
-	{ABS, JSR}, {IZX, AND}, {NUL, NUL}, {NUL, NUL}, {ZP0, BIT}, {ZP0, AND}, {ZP0, ROL}, {NUL, NUL}, {IMP, PLP}, {IMM, AND}, {ACC, ROL}, {NUL, NUL}, {ABS, BIT}, {ABS, AND}, {ABS, ROL}, {NUL, NUL},
-	{REL, BMI}, {IZY, AND}, {NUL, NUL}, {NUL, NUL}, {NUL, NUL}, {ZPX, AND}, {ZPX, ROL}, {NUL, NUL}, {IMP, SEC}, {ABY, AND}, {NUL, NUL}, {NUL, NUL}, {NUL, NUL}, {ABX, AND}, {ABX, ROL}, {NUL, NUL},
-	{IMP, RTI}, {IZX, EOR}, {NUL, NUL}, {NUL, NUL}, {NUL, NUL}, {ZP0, EOR}, {ZP0, LSR}, {NUL, NUL}, {IMP, PHA}, {IMM, EOR}, {ACC, LSR}, {NUL, NUL}, {ABS, JMP}, {ABS, EOR}, {ABS, LSR}, {NUL, NUL},
-	{REL, BVC}, {IZY, EOR}, {NUL, NUL}, {NUL, NUL}, {NUL, NUL}, {ZPX, EOR}, {ZPX, LSR}, {NUL, NUL}, {IMP, CLI}, {ABY, EOR}, {NUL, NUL}, {NUL, NUL}, {NUL, NUL}, {ABX, EOR}, {ABX, LSR}, {NUL, NUL},
-	{IMP, RTS}, {IZX, ADC}, {NUL, NUL}, {NUL, NUL}, {NUL, NUL}, {ZP0, ADC}, {ZP0, ROR}, {NUL, NUL}, {IMP, PLA}, {IMM, ADC}, {ACC, ROR}, {NUL, NUL}, {IND, JMP}, {ABS, ADC}, {ABS, ROR}, {NUL, NUL},
-	{REL, BVS}, {IZY, ADC}, {NUL, NUL}, {NUL, NUL}, {NUL, NUL}, {ZPX, ADC}, {ZPX, ROR}, {NUL, NUL}, {IMP, SEI}, {ABY, ADC}, {NUL, NUL}, {NUL, NUL}, {NUL, NUL}, {ABX, ADC}, {ABX, ROR}, {NUL, NUL},
-	{NUL, NUL}, {IZX, STA}, {NUL, NUL}, {NUL, NUL}, {ZP0, STY}, {ZP0, STA}, {ZP0, STX}, {NUL, NUL}, {IMP, DEY}, {NUL, NUL}, {IMP, TXA}, {NUL, NUL}, {ABS, STY}, {ABS, STA}, {ABS, STX}, {NUL, NUL},
-	{REL, BCC}, {IZY, STA}, {NUL, NUL}, {NUL, NUL}, {ZPX, STY}, {ZPX, STA}, {ZPY, STX}, {NUL, NUL}, {IMP, TYA}, {ABY, STA}, {IMP, TXS}, {NUL, NUL}, {NUL, NUL}, {ABX, STA}, {NUL, NUL}, {NUL, NUL},
-	{IMM, LDY}, {IZX, LDA}, {IMM, LDX}, {NUL, NUL}, {ZP0, LDY}, {ZP0, LDA}, {ZP0, LDX}, {NUL, NUL}, {IMP, TAY}, {IMM, LDA}, {IMP, TAX}, {NUL, NUL}, {ABS, LDY}, {ABS, LDA}, {ABS, LDX}, {NUL, NUL},
-	{REL, BCS}, {IZY, LDA}	
-};
-
 /*Helper functions */
 
 Byte fetch_byte(CPU *cpu) {
@@ -41,7 +26,7 @@ Word fetch_word(CPU *cpu) {
 	return data;
 }
 
-Byte cpu_read_byte(CPU *cpu, Word address) {
+static Byte cpu_read_byte(CPU *cpu, Word address) {
 	Byte data = 0x00;
 	// Address inside CPU RAM
 	if (address >= 0x0000 && address <= 0x1FFF)
@@ -58,7 +43,7 @@ Byte cpu_read_byte(CPU *cpu, Word address) {
 	return data;
 }
 
-Byte cpu_write_byte(CPU *cpu, Word address, Byte data) {
+static Byte cpu_write_byte(CPU *cpu, Word address, Byte data) {
 	// Address inside CPU RAM
 	if (address >= 0x0000 && address <= 0x1FFF)
 		cpu->p_Bus->RAM[address & 0x07FF] = data; 		// 2KB of RAM mirrored across 8KB
@@ -74,22 +59,22 @@ Byte cpu_write_byte(CPU *cpu, Word address, Byte data) {
 	return 0;
 }
 
-void stack_push(CPU *cpu, Byte data) {
+static void stack_push(CPU *cpu, Byte data) {
 	cpu->p_Bus->RAM[cpu->SP] = data;
 	cpu->SP = (cpu->SP == 0x0100) ? 0x01FF : cpu->SP - 1;
 }
 
-Byte stack_pop(CPU *cpu) {
+static Byte stack_pop(CPU *cpu) {
 	cpu->SP = (cpu->SP == 0x01FF) ? 0x0100 : cpu->SP + 1;
 	return cpu->p_Bus->RAM[cpu->SP];
 }
 
-void set_status_A(CPU *cpu) {
+static void _set_status_A(CPU *cpu) {
 	cpu->Z = (cpu->A == 0); // Zero flag is set if A is Zero
 	cpu->N = (cpu->A & 0b10000000) ? 1 : 0;
 }
 
-void check_page_crossed(CPU *cpu) {
+static void _check_page_crossed(CPU *cpu) {
 	if ((cpu->PC & 0xFF00) == (cpu->temp_word & 0xFF00))
 		cpu_clock(cpu);
 	else {
@@ -98,6 +83,21 @@ void check_page_crossed(CPU *cpu) {
 	}
 	cpu->PC = cpu->temp_word;
 }
+
+const Ins ins_table[256] = {
+	{IMP, BRK}, {IZX, ORA}, {NUL, NUL}, {NUL, NUL}, {NUL, NUL}, {ZP0, ORA}, {ZP0, ASL}, {NUL, NUL}, {IMP, PHP}, {IMM, ORA}, {ACC, ASL}, {NUL, NUL}, {NUL, NUL}, {ABS, ORA}, {ABS, ASL}, {NUL, NUL},
+	{REL, BPL}, {IZY, ORA}, {NUL, NUL}, {NUL, NUL}, {NUL, NUL}, {ZPX, ORA}, {ZPX, ASL}, {NUL, NUL}, {IMP, CLC}, {ABX, ORA}, {NUL, NUL}, {NUL, NUL}, {NUL, NUL}, {ABX, ORA}, {ABX, ASL}, {NUL, NUL},
+	{ABS, JSR}, {IZX, AND}, {NUL, NUL}, {NUL, NUL}, {ZP0, BIT}, {ZP0, AND}, {ZP0, ROL}, {NUL, NUL}, {IMP, PLP}, {IMM, AND}, {ACC, ROL}, {NUL, NUL}, {ABS, BIT}, {ABS, AND}, {ABS, ROL}, {NUL, NUL},
+	{REL, BMI}, {IZY, AND}, {NUL, NUL}, {NUL, NUL}, {NUL, NUL}, {ZPX, AND}, {ZPX, ROL}, {NUL, NUL}, {IMP, SEC}, {ABY, AND}, {NUL, NUL}, {NUL, NUL}, {NUL, NUL}, {ABX, AND}, {ABX, ROL}, {NUL, NUL},
+	{IMP, RTI}, {IZX, EOR}, {NUL, NUL}, {NUL, NUL}, {NUL, NUL}, {ZP0, EOR}, {ZP0, LSR}, {NUL, NUL}, {IMP, PHA}, {IMM, EOR}, {ACC, LSR}, {NUL, NUL}, {ABS, JMP}, {ABS, EOR}, {ABS, LSR}, {NUL, NUL},
+	{REL, BVC}, {IZY, EOR}, {NUL, NUL}, {NUL, NUL}, {NUL, NUL}, {ZPX, EOR}, {ZPX, LSR}, {NUL, NUL}, {IMP, CLI}, {ABY, EOR}, {NUL, NUL}, {NUL, NUL}, {NUL, NUL}, {ABX, EOR}, {ABX, LSR}, {NUL, NUL},
+	{IMP, RTS}, {IZX, ADC}, {NUL, NUL}, {NUL, NUL}, {NUL, NUL}, {ZP0, ADC}, {ZP0, ROR}, {NUL, NUL}, {IMP, PLA}, {IMM, ADC}, {ACC, ROR}, {NUL, NUL}, {IND, JMP}, {ABS, ADC}, {ABS, ROR}, {NUL, NUL},
+	{REL, BVS}, {IZY, ADC}, {NUL, NUL}, {NUL, NUL}, {NUL, NUL}, {ZPX, ADC}, {ZPX, ROR}, {NUL, NUL}, {IMP, SEI}, {ABY, ADC}, {NUL, NUL}, {NUL, NUL}, {NUL, NUL}, {ABX, ADC}, {ABX, ROR}, {NUL, NUL},
+	{NUL, NUL}, {IZX, STA}, {NUL, NUL}, {NUL, NUL}, {ZP0, STY}, {ZP0, STA}, {ZP0, STX}, {NUL, NUL}, {IMP, DEY}, {NUL, NUL}, {IMP, TXA}, {NUL, NUL}, {ABS, STY}, {ABS, STA}, {ABS, STX}, {NUL, NUL},
+	{REL, BCC}, {IZY, STA}, {NUL, NUL}, {NUL, NUL}, {ZPX, STY}, {ZPX, STA}, {ZPY, STX}, {NUL, NUL}, {IMP, TYA}, {ABY, STA}, {IMP, TXS}, {NUL, NUL}, {NUL, NUL}, {ABX, STA}, {NUL, NUL}, {NUL, NUL},
+	{IMM, LDY}, {IZX, LDA}, {IMM, LDX}, {NUL, NUL}, {ZP0, LDY}, {ZP0, LDA}, {ZP0, LDX}, {NUL, NUL}, {IMP, TAY}, {IMM, LDA}, {IMP, TAX}, {NUL, NUL}, {ABS, LDY}, {ABS, LDA}, {ABS, LDX}, {NUL, NUL},
+	{REL, BCS}, {IZY, LDA}	
+};
 
 /*Addressing modes*/
 
@@ -306,21 +306,21 @@ Byte ASL(CPU *cpu){
 
 Byte BCC(CPU *cpu){
 	if (!cpu->C)
-		check_page_crossed(cpu);
+		_check_page_crossed(cpu);
 	cpu_clock(cpu);
 	return 0;
 }
 
 Byte BCS(CPU *cpu){
 	if (cpu->C)
-		check_page_crossed(cpu);
+		_check_page_crossed(cpu);
 	cpu_clock(cpu);
 	return 0;
 }
 
 Byte BEQ(CPU *cpu){
 	if (cpu->Z)
-		check_page_crossed(cpu);
+		_check_page_crossed(cpu);
 
 	cpu_clock(cpu);
 	return 0;
@@ -338,14 +338,14 @@ Byte BIT(CPU *cpu){
 
 Byte BMI(CPU *cpu){
 	if (cpu->N)
-		check_page_crossed(cpu);
+		_check_page_crossed(cpu);
 	cpu_clock(cpu);
 	return 0;
 }
 
 Byte BNE(CPU *cpu){
 	if (!cpu->Z)
-		check_page_crossed(cpu);
+		_check_page_crossed(cpu);
 	cpu_clock(cpu);
 	return 0;
 }
@@ -358,14 +358,13 @@ Byte BPL(CPU *cpu){
 }
 
 Byte BRK(CPU *cpu){
-	Word target = cpu->PC + 1;
 	stack_push(cpu, (Byte) cpu->PC >> 8);
 	cpu_clock(cpu);
 	stack_push(cpu, (Byte) cpu->PC);
 	cpu_clock(cpu);
 	cpu->I = 1;
 	cpu_clock(cpu);
-	Byte SR;
+	Byte SR = 0;
 	SR |= (cpu->N) ? 0x80 : 0;
 	SR |= (cpu->V) ? 0x64 : 0;
 	SR |= (cpu->B) ? 0x16 : 0;
@@ -382,14 +381,14 @@ Byte BRK(CPU *cpu){
 
 Byte BVC(CPU *cpu){
 	if (!cpu->V)
-		check_page_crossed(cpu);
+		_check_page_crossed(cpu);
 	cpu_clock(cpu);
 	return 0;
 }
 
 Byte BVS(CPU *cpu){
 	if (cpu->V)
-		check_page_crossed(cpu);
+		_check_page_crossed(cpu);
 	cpu_clock(cpu);
 	return 0;
 }
@@ -547,7 +546,7 @@ Byte LDA(CPU *cpu){
 	cpu->A = cpu->temp_byte;
 	if (cpu->current_mode == 1)
 		cpu_clock(cpu);
-	set_status_A(cpu);
+	_set_status_A(cpu);
 	cpu_clock(cpu);
 	return 0;
 }
@@ -617,7 +616,7 @@ Byte PHA(CPU *cpu){
 }
 
 Byte PHP(CPU *cpu){
-	Byte SR;
+	Byte SR = 0;
 	SR |= (cpu->N) ? 0x80 : 0;
 	SR |= (cpu->V) ? 0x64 : 0;
 	SR |= 0x64;

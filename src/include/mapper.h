@@ -20,7 +20,7 @@ enum Mappers {
 
 int load_mapper_functions(Mapper *mapper, uint16_t mapper_num);
 
-void load_NROM(Mapper *mapper);
+void _load_NROM(Mapper *mapper);
 
 #endif // MAPPER_H
 

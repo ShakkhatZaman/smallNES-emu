@@ -5,23 +5,31 @@
 #include "cartridge.h"
 #include "mapper.h"
 
+static uint16_t _get_mapper_num(uint8_t header[]);
+
+static uint8_t _get_format(uint8_t header[]);
+
+static uint64_t _get_PRG_ROM_size(uint8_t header[], uint8_t format, uint8_t *num_banks);
+
+static uint64_t _get_CHR_ROM_size(uint8_t header[], uint8_t format, uint8_t *num_banks);
+
 int load_cartridge(char* filename, Mapper *mapper){
 	FILE *nes_file = fopen(filename, "rb");
 	uint8_t header[16];
 	
 	fread(header, 1, 16, nes_file);
 	
-	uint16_t Mapper_num = get_mapper_num(header);
-	uint8_t format = get_format(header);
+	uint16_t Mapper_num = _get_mapper_num(header);
+	uint8_t format = _get_format(header);
 	
 	int mapper_status = load_mapper_functions(mapper, Mapper_num);
-	if (mapper < 0) return -1;
+	if (mapper_status < 0) return -1;
 
 	if (header[6] & 0x04)
 		fseek(nes_file, 512, SEEK_CUR);
 
-	uint64_t PRG_ROM_SIZE = get_PRG_ROM_size(header, format, &mapper->PRG_ROM_banks);
-	uint64_t CHR_ROM_SIZE = get_CHR_ROM_size(header, format, &mapper->CHR_ROM_banks);
+	uint64_t PRG_ROM_SIZE = _get_PRG_ROM_size(header, format, &mapper->PRG_ROM_banks);
+	uint64_t CHR_ROM_SIZE = _get_CHR_ROM_size(header, format, &mapper->CHR_ROM_banks);
 
 	mapper->PRG_ROM_p = malloc(PRG_ROM_SIZE);
 	mapper->CHR_ROM_p = malloc(CHR_ROM_SIZE);
@@ -34,7 +42,7 @@ int load_cartridge(char* filename, Mapper *mapper){
 	return 0;
 }
 
-uint8_t get_format(uint8_t header[]){
+static uint8_t _get_format(uint8_t header[]){
 	uint8_t format;
 	if (header[0] == 'N' && header[1] == 'E' && header[2] == 'S' && header[3] == 0x1A)
 		format = 0; // iNES format
@@ -45,7 +53,7 @@ uint8_t get_format(uint8_t header[]){
 	return format;
 }
 
-uint16_t get_mapper_num(uint8_t header[]){
+static uint16_t _get_mapper_num(uint8_t header[]){
 	uint16_t Mapper_number = 0;
 	Mapper_number |= (header[6] >> 4);
 	Mapper_number |= (header[7] & 0xF0);
@@ -53,7 +61,7 @@ uint16_t get_mapper_num(uint8_t header[]){
 	return Mapper_number;
 }
 
-uint64_t get_PRG_ROM_size(uint8_t header[], uint8_t format, uint8_t *num_banks) {
+static uint64_t _get_PRG_ROM_size(uint8_t header[], uint8_t format, uint8_t *num_banks) {
 	uint8_t num_PRG_ROM_bank = 0;
 	uint64_t PRG_ROM_unit = 0;
 
@@ -76,7 +84,7 @@ uint64_t get_PRG_ROM_size(uint8_t header[], uint8_t format, uint8_t *num_banks) 
 	return (uint64_t) (num_PRG_ROM_bank * PRG_ROM_unit);
 }
 
-uint64_t get_CHR_ROM_size(uint8_t header[], uint8_t format, uint8_t *num_banks) {
+static uint64_t _get_CHR_ROM_size(uint8_t header[], uint8_t format, uint8_t *num_banks) {
 	uint8_t num_CHR_ROM_bank = 0;
 	uint64_t CHR_ROM_unit = 0;
 

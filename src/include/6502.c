@@ -39,7 +39,7 @@ void execute(CPU *p_cpu) {
 	Byte op_code = fetch_byte(p_cpu);
 	cpu_clock(p_cpu);
 	Ins ins_struct = ins_table[op_code];
-	Byte additional_cycles = ins_struct.address_mode(p_cpu);
+	ins_struct.address_mode(p_cpu);
 	ins_struct.operation(p_cpu);
 }
 

@@ -62,4 +62,4 @@ void load_mapper_to_cpu(CPU * cpu, Mapper * mapper);
 
 void exit_cpu(CPU *cpu, int argc);
 
-#endif
+#endif //CPU_TYPES_H

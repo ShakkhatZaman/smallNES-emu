@@ -26,4 +26,4 @@ Byte cpu_to_ppu_read(PPU *p_ppu, Word address);
 
 Byte cpu_to_ppu_write(PPU *p_ppu, Word address, Byte data);
 
-#endif 
+#endif //PPU_H
