@@ -25,13 +25,13 @@ SDL_Window *window;
 SDL_Renderer *renderer;
 SDL_Event event;
 
-int init_emulator(int argc, Mapper *p_mapper, char *argv[]);
-int get_graphics_contexts(void);
-void exit_emulator(void);
-void manage_events(SDL_Event *p_event);
-void draw_to_screen(void);
-void update_fps(void);
-uint64_t get_time_us(void);
+static int init_emulator(int argc, Mapper *p_mapper, char *argv[]);
+static int get_graphics_contexts(void);
+static void exit_emulator(int argc);
+static void manage_events(SDL_Event *p_event);
+static void draw_to_screen(void);
+static void update_fps(void);
+static uint64_t get_time_us(void);
 
 int main(int argc, char *argv[]){
     int status = get_graphics_contexts();
@@ -50,19 +50,18 @@ int main(int argc, char *argv[]){
         draw_to_screen();
 	}
 
-	exit_cpu(&cpu, argc);
 	printf("Exiting Emulator\n %d", cycle_count);
-    exit_emulator();
+    exit_emulator(argc);
     
 	return 0;
 }
 
-void manage_events(SDL_Event *p_event) {
+static void manage_events(SDL_Event *p_event) {
     SDL_PollEvent(p_event);
     if (event.type == SDL_QUIT) emulator_running = false;
 }
 
-void draw_to_screen(void) {
+static void draw_to_screen(void) {
     if (ppu.frame_complete) {
         SDL_RenderCopy(renderer, (void *)ppu.ppu_draw_texture, NULL, NULL);
         SDL_RenderPresent(renderer);
@@ -71,7 +70,7 @@ void draw_to_screen(void) {
     }
 }
 
-int init_emulator(int argc, Mapper *p_mapper, char *argv[]) {
+static int init_emulator(int argc, Mapper *p_mapper, char *argv[]) {
 	if (argc < 1){
 		printf("No file to load from\n");
 		return -1;
@@ -93,7 +92,7 @@ int init_emulator(int argc, Mapper *p_mapper, char *argv[]) {
     return 0;
 }
 
-int get_graphics_contexts(void) {
+static int get_graphics_contexts(void) {
     window = SDL_CreateWindow("NES Emulator",
                               SDL_WINDOWPOS_CENTERED,
                               SDL_WINDOWPOS_CENTERED,
@@ -107,21 +106,22 @@ int get_graphics_contexts(void) {
     return 0;
 }
 
-void exit_emulator(void) {
+static void exit_emulator(int argc) {
+	exit_cpu(&cpu, argc);
     SDL_DestroyWindow(window);
     SDL_DestroyRenderer(renderer);
     SDL_DestroyTexture(ppu.ppu_draw_texture);
     SDL_Quit();
 }
 
-void update_fps(void) {
+static void update_fps(void) {
     FPS = 1e6 / (double) (get_time_us() - current_time);
     snprintf(FPS_str, 12, "%.12f", FPS); 
     current_time = get_time_us();
     SDL_SetWindowTitle(window, FPS_str);
 }
 
-uint64_t get_time_us(void) {
+static uint64_t get_time_us(void) {
 	struct timeval current_timeval;
 	gettimeofday(&current_timeval, NULL);
 	return (uint64_t) current_timeval.tv_sec * (int) 1e6 + current_timeval.tv_usec;

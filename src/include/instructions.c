@@ -4,6 +4,13 @@
 
 /*Helper functions */
 
+static Byte cpu_read_byte(CPU *cpu, Word address);
+static Byte cpu_write_byte(CPU *cpu, Word address, Byte data);
+static void stack_push(CPU *cpu, Byte data);
+static Byte stack_pop(CPU *cpu);
+static void _set_status_A(CPU *cpu);
+static void _check_page_crossed(CPU *cpu);
+
 Byte fetch_byte(CPU *cpu) {
 	Word counter = cpu->PC;
 	cpu->PC = (counter == 0xFFFF) ? 0x8000 : counter + 1;

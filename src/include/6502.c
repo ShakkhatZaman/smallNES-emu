@@ -3,10 +3,10 @@
 #include "instructions.h"
 #include "cartridge.h"
 
-int *total_cycles;
+int *p_total_cycles;
 
 int cpu_clock(CPU *cpu) { //main function to process status of cpu
-	*total_cycles += 1; // 1 clock has passed
+	*p_total_cycles += 1; // 1 clock has passed
     ppu_clock(cpu->p_ppu);
     ppu_clock(cpu->p_ppu);
     ppu_clock(cpu->p_ppu);
@@ -28,7 +28,7 @@ void reset_cpu(CPU *cpu, CPU_Bus *cpuBus, PPU *p_ppu) {
 
 void init_cpu(CPU *p_cpu, int *cycles) {
 	printf("Initializing CPU...\n");
-	total_cycles = cycles;
+	p_total_cycles = cycles;
 	p_cpu->PC = fetch_word(p_cpu);
 }
 

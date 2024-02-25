@@ -28,7 +28,7 @@ uint8_t _cpu_write(Mapper *mapper, uint16_t address, uint8_t data) {
 	//	address &= (mapper->PRG_ROM_banks > 1) ? 0x7FFF : 0x3FFF;
 	//	mapper->PRG_ROM_p[address] = data;
 	//}
-	//--- For future ---
+	// TODO
 	return 0;
 }
 
@@ -40,6 +40,6 @@ uint8_t _ppu_read(Mapper *mapper, uint16_t address) {
 }
 
 uint8_t _ppu_write(Mapper *mapper, uint16_t address, uint8_t data) {
-	//--- For future ---
+	// TODO
 	return 0;
 }
