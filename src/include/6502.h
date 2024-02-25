@@ -7,10 +7,6 @@
 
 #define NOT_ENOUGH_CYCLES 0
 
-enum {
-	NO_INS, INF_CYCLES
-};
-
 #define MEM_SIZE 0x10000 // 65536 B = 1024 * 64 B = 64 kB 
 
 typedef uint8_t Byte;
@@ -50,15 +46,15 @@ typedef struct CPU {
 	Byte current_mode;
 } CPU;
 
-void reset(CPU *cpu, CPU_Bus *cpuBus, PPU *p_PPU, PPU_Bus *ppu_bus);
+void reset_cpu(CPU *cpu, CPU_Bus *cpuBus, PPU *p_ppu);
 
 void init_cpu(CPU *p_cpu, int *cycles);
 
-void execute(CPU *p_cpu);
+void execute_cpu_ppu(CPU *p_cpu);
 
 int cpu_clock(CPU *cpu);
 
-void load_mapper_to_cpu(CPU * cpu, Mapper * mapper);
+void load_mapper(CPU * cpu, Mapper * mapper);
 
 void exit_cpu(CPU *cpu, int argc);
 

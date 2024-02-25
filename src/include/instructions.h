@@ -19,6 +19,10 @@ Byte fetch_byte(CPU *cpu);
 
 Word fetch_word(CPU *cpu);
 
+void cpu_irq(CPU *cpu);
+
+void cpu_nmi(CPU *cpu);
+
 /*Addressing modes*/
 
 Byte ABS(CPU *cpu);

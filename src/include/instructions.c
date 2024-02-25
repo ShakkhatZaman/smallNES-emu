@@ -1,5 +1,5 @@
-#include <stdint.h>
 #include "instructions.h"
+#include "6502.h"
 #include "ppu.h"
 
 /*Helper functions */
@@ -9,7 +9,7 @@ Byte fetch_byte(CPU *cpu) {
 	cpu->PC = (counter == 0xFFFF) ? 0x8000 : counter + 1;
 	Byte data = 0x00;
 	//printf("%x\n", cpu->PC);
-	if (counter >= 0x4020 && counter <= 0xFFFF)
+	if (counter >= 0x4020)
 		data = cpu->p_Bus->mapper->cpu_read(cpu->p_Bus->mapper, counter);
 	return data;
 }
@@ -18,7 +18,7 @@ Word fetch_word(CPU *cpu) {
 	Word counter = cpu->PC;
 	Word data = 0x0000;
 	cpu->PC = (counter == 0xFFFF) ? 0x8001 : counter + 2;
-	if (counter >= 0x4020 && counter <= 0xFFFF) {
+	if (counter >= 0x4020) {
 		data = (Word) cpu->p_Bus->mapper->cpu_read(cpu->p_Bus->mapper, counter);
 		cpu_clock(cpu);
 		data |= ((Word) cpu->p_Bus->mapper->cpu_read(cpu->p_Bus->mapper, counter + 1)) << 8;
@@ -29,7 +29,7 @@ Word fetch_word(CPU *cpu) {
 static Byte cpu_read_byte(CPU *cpu, Word address) {
 	Byte data = 0x00;
 	// Address inside CPU RAM
-	if (address >= 0x0000 && address <= 0x1FFF)
+	if (address <= 0x1FFF)
 		data = cpu->p_Bus->RAM[address & 0x07FF];		// 2KB of RAM mirrored across 8KB
 
 	// Address inside PPU registers
@@ -37,7 +37,7 @@ static Byte cpu_read_byte(CPU *cpu, Word address) {
 		data = cpu_to_ppu_read(cpu->p_ppu, address);	// Reading on the ppu registers
 	
 	// Address inside cartridge
-	else if (address <= 0xFFFF)
+	else
 		data = cpu->p_Bus->mapper->cpu_read(cpu->p_Bus->mapper, address);
 
 	return data;
@@ -45,7 +45,7 @@ static Byte cpu_read_byte(CPU *cpu, Word address) {
 
 static Byte cpu_write_byte(CPU *cpu, Word address, Byte data) {
 	// Address inside CPU RAM
-	if (address >= 0x0000 && address <= 0x1FFF)
+	if (address <= 0x1FFF)
 		cpu->p_Bus->RAM[address & 0x07FF] = data; 		// 2KB of RAM mirrored across 8KB
 	
 	// Address inside PPU registers
@@ -53,7 +53,7 @@ static Byte cpu_write_byte(CPU *cpu, Word address, Byte data) {
 		cpu_to_ppu_write(cpu->p_ppu, address, data);	// Writting on the ppu registers
 	
 	// Address inside cartridge
-	else if (address <= 0xFFFF)
+	else
 		cpu->p_Bus->mapper->cpu_write(cpu->p_Bus->mapper, address, data);
 	
 	return 0;
@@ -84,19 +84,77 @@ static void _check_page_crossed(CPU *cpu) {
 	cpu->PC = cpu->temp_word;
 }
 
+void cpu_irq(CPU *cpu) {
+    if (!(cpu->I)) {
+        stack_push(cpu, (Byte) (cpu->PC >> 8));
+        cpu_clock(cpu);
+        stack_push(cpu, (Byte) cpu->PC);
+        cpu_clock(cpu);
+        Byte SR = 0;
+        SR |= (cpu->N) ? 0x80 : 0;
+        SR |= (cpu->V) ? 0x40 : 0;
+        SR |= (cpu->B) ? 0x10 : 0;
+        SR |= (cpu->D) ? 0x8 : 0;
+        SR |= (cpu->I) ? 0x4 : 0;
+        SR |= (cpu->Z) ? 0x2 : 0;
+        SR |= (cpu->C) ? 0x1 : 0;
+        stack_push(cpu, SR);
+        cpu_clock(cpu);
+        cpu->I = 1;
+        cpu_clock(cpu);
+        Word new_address = cpu_read_byte(cpu, 0xFFFE);
+        cpu_clock(cpu);
+        new_address |= ((Word) cpu_read_byte(cpu, 0xFFFF)) << 8;
+        cpu_clock(cpu);
+        cpu->PC = new_address;
+        cpu_clock(cpu);
+    }
+}
+
+void cpu_nmi(CPU *cpu) {
+    cpu_clock(cpu);
+    stack_push(cpu, (Byte) (cpu->PC >> 8));
+    cpu_clock(cpu);
+    stack_push(cpu, (Byte) cpu->PC);
+    cpu_clock(cpu);
+    Byte SR = 0;
+    SR |= (cpu->N) ? 0x80 : 0;
+    SR |= (cpu->V) ? 0x40 : 0;
+    SR |= (cpu->B) ? 0x10 : 0;
+    SR |= (cpu->D) ? 0x8 : 0;
+    SR |= (cpu->I) ? 0x4 : 0;
+    SR |= (cpu->Z) ? 0x2 : 0;
+    SR |= (cpu->C) ? 0x1 : 0;
+    stack_push(cpu, SR);
+    cpu_clock(cpu);
+    cpu->I = 1;
+    cpu_clock(cpu);
+    Word new_address = cpu_read_byte(cpu, 0xFFFE);
+    cpu_clock(cpu);
+    new_address |= ((Word) cpu_read_byte(cpu, 0xFFFF)) << 8;
+    cpu_clock(cpu);
+    cpu->PC = new_address;
+    cpu_clock(cpu);
+}
+
 const Ins ins_table[256] = {
-	{IMP, BRK}, {IZX, ORA}, {NUL, NUL}, {NUL, NUL}, {NUL, NUL}, {ZP0, ORA}, {ZP0, ASL}, {NUL, NUL}, {IMP, PHP}, {IMM, ORA}, {ACC, ASL}, {NUL, NUL}, {NUL, NUL}, {ABS, ORA}, {ABS, ASL}, {NUL, NUL},
-	{REL, BPL}, {IZY, ORA}, {NUL, NUL}, {NUL, NUL}, {NUL, NUL}, {ZPX, ORA}, {ZPX, ASL}, {NUL, NUL}, {IMP, CLC}, {ABX, ORA}, {NUL, NUL}, {NUL, NUL}, {NUL, NUL}, {ABX, ORA}, {ABX, ASL}, {NUL, NUL},
-	{ABS, JSR}, {IZX, AND}, {NUL, NUL}, {NUL, NUL}, {ZP0, BIT}, {ZP0, AND}, {ZP0, ROL}, {NUL, NUL}, {IMP, PLP}, {IMM, AND}, {ACC, ROL}, {NUL, NUL}, {ABS, BIT}, {ABS, AND}, {ABS, ROL}, {NUL, NUL},
-	{REL, BMI}, {IZY, AND}, {NUL, NUL}, {NUL, NUL}, {NUL, NUL}, {ZPX, AND}, {ZPX, ROL}, {NUL, NUL}, {IMP, SEC}, {ABY, AND}, {NUL, NUL}, {NUL, NUL}, {NUL, NUL}, {ABX, AND}, {ABX, ROL}, {NUL, NUL},
-	{IMP, RTI}, {IZX, EOR}, {NUL, NUL}, {NUL, NUL}, {NUL, NUL}, {ZP0, EOR}, {ZP0, LSR}, {NUL, NUL}, {IMP, PHA}, {IMM, EOR}, {ACC, LSR}, {NUL, NUL}, {ABS, JMP}, {ABS, EOR}, {ABS, LSR}, {NUL, NUL},
-	{REL, BVC}, {IZY, EOR}, {NUL, NUL}, {NUL, NUL}, {NUL, NUL}, {ZPX, EOR}, {ZPX, LSR}, {NUL, NUL}, {IMP, CLI}, {ABY, EOR}, {NUL, NUL}, {NUL, NUL}, {NUL, NUL}, {ABX, EOR}, {ABX, LSR}, {NUL, NUL},
-	{IMP, RTS}, {IZX, ADC}, {NUL, NUL}, {NUL, NUL}, {NUL, NUL}, {ZP0, ADC}, {ZP0, ROR}, {NUL, NUL}, {IMP, PLA}, {IMM, ADC}, {ACC, ROR}, {NUL, NUL}, {IND, JMP}, {ABS, ADC}, {ABS, ROR}, {NUL, NUL},
-	{REL, BVS}, {IZY, ADC}, {NUL, NUL}, {NUL, NUL}, {NUL, NUL}, {ZPX, ADC}, {ZPX, ROR}, {NUL, NUL}, {IMP, SEI}, {ABY, ADC}, {NUL, NUL}, {NUL, NUL}, {NUL, NUL}, {ABX, ADC}, {ABX, ROR}, {NUL, NUL},
-	{NUL, NUL}, {IZX, STA}, {NUL, NUL}, {NUL, NUL}, {ZP0, STY}, {ZP0, STA}, {ZP0, STX}, {NUL, NUL}, {IMP, DEY}, {NUL, NUL}, {IMP, TXA}, {NUL, NUL}, {ABS, STY}, {ABS, STA}, {ABS, STX}, {NUL, NUL},
-	{REL, BCC}, {IZY, STA}, {NUL, NUL}, {NUL, NUL}, {ZPX, STY}, {ZPX, STA}, {ZPY, STX}, {NUL, NUL}, {IMP, TYA}, {ABY, STA}, {IMP, TXS}, {NUL, NUL}, {NUL, NUL}, {ABX, STA}, {NUL, NUL}, {NUL, NUL},
-	{IMM, LDY}, {IZX, LDA}, {IMM, LDX}, {NUL, NUL}, {ZP0, LDY}, {ZP0, LDA}, {ZP0, LDX}, {NUL, NUL}, {IMP, TAY}, {IMM, LDA}, {IMP, TAX}, {NUL, NUL}, {ABS, LDY}, {ABS, LDA}, {ABS, LDX}, {NUL, NUL},
-	{REL, BCS}, {IZY, LDA}	
+			 /*\--- 0 ---\ \--- 1 ---\ \--- 2 ---\ \--- 3 ---\ \--- 4 ---\ \--- 5 ---\ \--- 6 ---\ \--- 7 ---\ \--- 8 ---\ \--- 9 ---\ \--- A ---\ \--- B ---\ \--- C ---\ \--- D ---\ \--- E ---\ \--- F ---\*/
+	/*= 0 =*/	{IMP, BRK}, {IZX, ORA}, {NUL, NUL}, {NUL, NUL}, {NUL, NUL}, {ZP0, ORA}, {ZP0, ASL}, {NUL, NUL}, {IMP, PHP}, {IMM, ORA}, {ACC, ASL}, {NUL, NUL}, {NUL, NUL}, {ABS, ORA}, {ABS, ASL}, {NUL, NUL},
+	/*= 1 =*/	{REL, BPL}, {IZY, ORA}, {NUL, NUL}, {NUL, NUL}, {NUL, NUL}, {ZPX, ORA}, {ZPX, ASL}, {NUL, NUL}, {IMP, CLC}, {ABX, ORA}, {NUL, NUL}, {NUL, NUL}, {NUL, NUL}, {ABX, ORA}, {ABX, ASL}, {NUL, NUL},
+	/*= 2 =*/	{ABS, JSR}, {IZX, AND}, {NUL, NUL}, {NUL, NUL}, {ZP0, BIT}, {ZP0, AND}, {ZP0, ROL}, {NUL, NUL}, {IMP, PLP}, {IMM, AND}, {ACC, ROL}, {NUL, NUL}, {ABS, BIT}, {ABS, AND}, {ABS, ROL}, {NUL, NUL},
+	/*= 3 =*/	{REL, BMI}, {IZY, AND}, {NUL, NUL}, {NUL, NUL}, {NUL, NUL}, {ZPX, AND}, {ZPX, ROL}, {NUL, NUL}, {IMP, SEC}, {ABY, AND}, {NUL, NUL}, {NUL, NUL}, {NUL, NUL}, {ABX, AND}, {ABX, ROL}, {NUL, NUL},
+	/*= 4 =*/	{IMP, RTI}, {IZX, EOR}, {NUL, NUL}, {NUL, NUL}, {NUL, NUL}, {ZP0, EOR}, {ZP0, LSR}, {NUL, NUL}, {IMP, PHA}, {IMM, EOR}, {ACC, LSR}, {NUL, NUL}, {ABS, JMP}, {ABS, EOR}, {ABS, LSR}, {NUL, NUL},
+	/*= 5 =*/	{REL, BVC}, {IZY, EOR}, {NUL, NUL}, {NUL, NUL}, {NUL, NUL}, {ZPX, EOR}, {ZPX, LSR}, {NUL, NUL}, {IMP, CLI}, {ABY, EOR}, {NUL, NUL}, {NUL, NUL}, {NUL, NUL}, {ABX, EOR}, {ABX, LSR}, {NUL, NUL},
+	/*= 6 =*/	{IMP, RTS}, {IZX, ADC}, {NUL, NUL}, {NUL, NUL}, {NUL, NUL}, {ZP0, ADC}, {ZP0, ROR}, {NUL, NUL}, {IMP, PLA}, {IMM, ADC}, {ACC, ROR}, {NUL, NUL}, {IND, JMP}, {ABS, ADC}, {ABS, ROR}, {NUL, NUL},
+	/*= 7 =*/	{REL, BVS}, {IZY, ADC}, {NUL, NUL}, {NUL, NUL}, {NUL, NUL}, {ZPX, ADC}, {ZPX, ROR}, {NUL, NUL}, {IMP, SEI}, {ABY, ADC}, {NUL, NUL}, {NUL, NUL}, {NUL, NUL}, {ABX, ADC}, {ABX, ROR}, {NUL, NUL},
+	/*= 8 =*/	{NUL, NUL}, {IZX, STA}, {NUL, NUL}, {NUL, NUL}, {ZP0, STY}, {ZP0, STA}, {ZP0, STX}, {NUL, NUL}, {IMP, DEY}, {NUL, NUL}, {IMP, TXA}, {NUL, NUL}, {ABS, STY}, {ABS, STA}, {ABS, STX}, {NUL, NUL},
+	/*= 9 =*/	{REL, BCC}, {IZY, STA}, {NUL, NUL}, {NUL, NUL}, {ZPX, STY}, {ZPX, STA}, {ZPY, STX}, {NUL, NUL}, {IMP, TYA}, {ABY, STA}, {IMP, TXS}, {NUL, NUL}, {NUL, NUL}, {ABX, STA}, {NUL, NUL}, {NUL, NUL},
+	/*= A =*/	{IMM, LDY}, {IZX, LDA}, {IMM, LDX}, {NUL, NUL}, {ZP0, LDY}, {ZP0, LDA}, {ZP0, LDX}, {NUL, NUL}, {IMP, TAY}, {IMM, LDA}, {IMP, TAX}, {NUL, NUL}, {ABS, LDY}, {ABS, LDA}, {ABS, LDX}, {NUL, NUL},
+	/*= B =*/	{REL, BCS}, {IZY, LDA}, {NUL, NUL}, {NUL, NUL}, {ZPX, LDY}, {ZPX, LDA}, {ZPY, LDX}, {NUL, NUL}, {IMP, CLV}, {ABY, LDA}, {IMP, TSX}, {NUL, NUL}, {ABX, LDY}, {ABX, LDA}, {ABY, LDX}, {NUL, NUL},
+	/*= C =*/	{IMM, CPY}, {IZX, CMP}, {NUL, NUL}, {NUL, NUL}, {ZP0, CPY}, {ZP0, CMP}, {ZP0, DEC}, {NUL, NUL}, {IMP, INY}, {IMM, CMP}, {IMP, DEX}, {NUL, NUL}, {ABS, CPY}, {ABS, CMP}, {ABS, DEC}, {NUL, NUL},
+	/*= D =*/	{REL, BNE}, {IZY, CMP}, {NUL, NUL}, {NUL, NUL}, {NUL, NUL}, {ZPX, CMP}, {ZPX, DEC}, {NUL, NUL}, {IMP, CLD}, {ABY, CMP}, {NUL, NUL}, {NUL, NUL}, {NUL, NUL}, {ABX, CMP}, {ABX, DEC}, {NUL, NUL},
+	/*= E =*/	{IMM, CPX}, {IZX, SBC}, {NUL, NUL}, {NUL, NUL}, {ZP0, CPX}, {ZP0, SBC}, {ZP0, INC}, {NUL, NUL}, {IMP, INX}, {IMM, SBC}, {IMP, NOP}, {NUL, NUL}, {ABS, CPX}, {ABS, SBC}, {ABS, INC}, {NUL, NUL},
+	/*= F =*/	{REL, BEQ}, {IZY, SBC}, {NUL, NUL}, {NUL, NUL}, {NUL, NUL}, {ZPX, SBC}, {ZPX, INC}, {NUL, NUL}, {IMP, SED}, {ABY, SBC}, {NUL, NUL}, {NUL, NUL}, {NUL, NUL}, {ABX, SBC}, {ABX, INC}, {NUL, NUL}
 };
 
 /*Addressing modes*/
@@ -358,20 +416,20 @@ Byte BPL(CPU *cpu){
 }
 
 Byte BRK(CPU *cpu){
-	stack_push(cpu, (Byte) cpu->PC >> 8);
+	stack_push(cpu, (Byte) (cpu->PC >> 8));
 	cpu_clock(cpu);
-	stack_push(cpu, (Byte) cpu->PC);
-	cpu_clock(cpu);
-	cpu->I = 1;
+	stack_push(cpu, (Byte) (cpu->PC));
 	cpu_clock(cpu);
 	Byte SR = 0;
 	SR |= (cpu->N) ? 0x80 : 0;
-	SR |= (cpu->V) ? 0x64 : 0;
-	SR |= (cpu->B) ? 0x16 : 0;
+	SR |= (cpu->V) ? 0x40 : 0;
+	SR |= (cpu->B) ? 0x10 : 0;
 	SR |= (cpu->D) ? 0x8 : 0;
 	SR |= (cpu->I) ? 0x4 : 0;
 	SR |= (cpu->Z) ? 0x2 : 0;
 	SR |= (cpu->C) ? 0x1 : 0;
+	cpu_clock(cpu);
+	cpu->I = 1;
 	cpu_clock(cpu);
 	stack_push(cpu, SR);
 	cpu_clock(cpu);
@@ -618,9 +676,9 @@ Byte PHA(CPU *cpu){
 Byte PHP(CPU *cpu){
 	Byte SR = 0;
 	SR |= (cpu->N) ? 0x80 : 0;
-	SR |= (cpu->V) ? 0x64 : 0;
-	SR |= 0x64;
-	SR |= (cpu->B) ? 0x16 : 0;
+	SR |= (cpu->V) ? 0x40 : 0;
+	SR |= 0x20;
+	SR |= (cpu->B) ? 0x10 : 0;
 	SR |= (cpu->D) ? 0x8 : 0;
 	SR |= 0x4; // Interrupt flag set to 1
 	SR |= (cpu->Z) ? 0x2 : 0;
@@ -646,8 +704,8 @@ Byte PLP(CPU *cpu){
 	Byte PS = stack_pop(cpu);
 	cpu_clock(cpu);
 	cpu->N = (PS & 0x80) ? 1 : 0;
-	cpu->V = (PS & 0x64) ? 1 : 0;
-	cpu->B = (PS & 0x16) ? 1 : 0;
+	cpu->V = (PS & 0x40) ? 1 : 0;
+	cpu->B = (PS & 0x10) ? 1 : 0;
 	cpu->D = (PS & 0x8) ? 1 : 0;
 	cpu->I = (PS & 0x4) ? 1 : 0;
 	cpu->Z = (PS & 0x2) ? 1 : 0;
@@ -708,8 +766,8 @@ Byte RTI(CPU *cpu){
 	Byte PS = stack_pop(cpu);
 	cpu_clock(cpu);
 	cpu->N = (PS & 0x80) ? 1 : 0;
-	cpu->V = (PS & 0x64) ? 1 : 0;
-	cpu->B = (PS & 0x16) ? 1 : 0;
+	cpu->V = (PS & 0x40) ? 1 : 0;
+	cpu->B = (PS & 0x10) ? 1 : 0;
 	cpu->D = (PS & 0x8) ? 1 : 0;
 	cpu->I = (PS & 0x4) ? 1 : 0;
 	cpu->Z = (PS & 0x2) ? 1 : 0;

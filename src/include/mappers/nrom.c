@@ -15,7 +15,7 @@ void _load_NROM(Mapper *mapper) {
 
 uint8_t _cpu_read(Mapper *mapper, uint16_t address) {
 	uint8_t data = 0x00;
-	if (address >= 0x8000 && address <= 0xFFFF) {
+	if (address >= 0x8000) {
 		// Data mirrored according to bank count
 		address &= (mapper->PRG_ROM_banks > 1) ? 0x7FFF : 0x3FFF;
 		data = mapper->PRG_ROM_p[address];
@@ -34,7 +34,7 @@ uint8_t _cpu_write(Mapper *mapper, uint16_t address, uint8_t data) {
 
 uint8_t _ppu_read(Mapper *mapper, uint16_t address) {
 	uint8_t data = 0x00;
-	if (address >= 0x0000 && address <= 0x1FFF)
+	if (address <= 0x1FFF)
 		data = mapper->CHR_ROM_p[address];
 	return data;
 }
