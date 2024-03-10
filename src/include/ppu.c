@@ -1,10 +1,13 @@
 #include <SDL2/SDL_pixels.h>
 #include <stdbool.h>
+#include <stdint.h>
 #include <stdio.h>
 #include <stdlib.h>
 #include "ppu.h"
 
 static void ppu_draw(PPU *ppu);
+static Pattern_row get_pattern_row(PPU *ppu, Byte table_index, Byte tile_num, Byte tile_y);
+static uint32_t get_pixel_color(PPU *ppu, Byte palette_num, Byte pixel);
 
 void ppu_clock(PPU *ppu) {
     if (ppu->dots >= DOTS) {
@@ -19,6 +22,13 @@ void ppu_clock(PPU *ppu) {
     ppu_draw(ppu);
     ppu->dots++;
 }
+
+uint32_t NES_Palette[64] = {
+    0x525201, 0x52511A, 0x0F0F23, 0x656306, 0x033640, 0x4B2604, 0x093F32, 0x040013, 0x201F0B, 0x00002A, 0x2F0000, 0x000A2E, 0x260000, 0x2D0000, 0x000000, 0x000000,
+    0xA0A01E, 0xA09D4A, 0x373858, 0xBCB828, 0x217584, 0x945C23, 0x2E826F, 0x24003F, 0x525131, 0x000063, 0x6B1A0E, 0x052E69, 0x5C1000, 0x680000, 0x000000, 0x000000,
+    0xFFFE69, 0xFFFC9E, 0x8789AE, 0xFFFF76, 0x6DCEE0, 0xF1B270, 0x7CDEC8, 0x703E91, 0xA7A681, 0x2528BA, 0xC46354, 0x467DC1, 0xB3563C, 0xC03C3C, 0x000000, 0x000000,
+    0xFFFEBE, 0xFFFDD6, 0xCCCCDD, 0xFFFFC4, 0xC0EAF2, 0xF9DFC1, 0xC7F1E8, 0xC2AAD0, 0xDAD9C9, 0x9D9EE2, 0xE6BCB4, 0xAEC7E5, 0xDFB5A9, 0xE4A9A9, 0x000000, 0x000000
+};
 
 static void ppu_draw(PPU *ppu) {
     /* if (-1 < ppu->dots && ppu->dots < DOTS && -1 < ppu->scanlines && ppu->scanlines < SCANLINES) {
@@ -110,7 +120,11 @@ Byte ppu_read_byte(PPU *p_ppu, Word address) {
     } // Inside Palette memory
     else if (0x3F00 >= address && address <= 0x3FFF) {
         address &= 0x1F;
-        data = p_ppu->p_Bus->Paletes[address];
+        address = (address == 0x10) ? 0x00 : address;
+        address = (address == 0x14) ? 0x04 : address;
+        address = (address == 0x18) ? 0x08 : address;
+        address = (address == 0x1C) ? 0x0C : address;
+        data = p_ppu->p_Bus->Palettes[address];
     }
 
 	return data;
@@ -129,9 +143,28 @@ Byte ppu_write_byte(PPU *p_ppu, Word address, Byte data) {
     } // Inside Palette memory
     else if (0x3F00 >= address && address <= 0x3FFF) {
         address &= 0x1F;
-        p_ppu->p_Bus->Paletes[address] = data;
+        address = (address == 0x10) ? 0x00 : address;
+        address = (address == 0x14) ? 0x04 : address;
+        address = (address == 0x18) ? 0x08 : address;
+        address = (address == 0x1C) ? 0x0C : address;
+        p_ppu->p_Bus->Palettes[address] = data;
     }
 
     return 0;
 }
 
+static Pattern_row get_pattern_row(PPU *ppu, Byte table_index, Byte tile_num, Byte tile_y) {
+    Word address = (table_index) ? 0x1000 : 0x0000;
+    address |= ((Word) tile_num) << 4;
+    address |= (tile_y < 8) ? tile_y : 0;
+    Pattern_row row;
+    row.LS_Byte = ppu_read_byte(ppu, address);
+    address |= 0x8;
+    row.MS_Byte = ppu_read_byte(ppu, address);
+    return row;
+}
+
+static uint32_t get_pixel_color(PPU *ppu, Byte palette_num, Byte pixel) {
+    Byte pixel_index = ppu_read_byte(ppu, (palette_num * COLORS_PER_PALETTE) + pixel);
+    return NES_Palette[pixel_index & 0x3F];
+}
