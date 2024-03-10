@@ -35,7 +35,7 @@ uint8_t _cpu_write(Mapper *mapper, uint16_t address, uint8_t data) {
 uint8_t _ppu_read(Mapper *mapper, uint16_t address) {
 	uint8_t data = 0x00;
 	if (address <= 0x1FFF)
-		data = mapper->CHR_ROM_p[address];
+		data = mapper->CHR_ROM_p[address]; // Pattern tables
 	return data;
 }
 

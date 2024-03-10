@@ -1,7 +1,3 @@
-# **Project on HOLD**
-I'm have put to this project on hold because of my college exam knocking at my door.
-I'll return to this and finish it properly after my exam finishes.
-
 # smallNES-emu
 
 This is an NES emulator I'm **currently writing** in C.  After learning C for about 4 months I started this as my first project with the expectation of learning other aspects of system programming. So far I've learned quite a bit about the [NES](https://en.wikipedia.org/wiki/Nintendo_Entertainment_System) and the processor ([6502](https://en.wikipedia.org/wiki/MOS_Technology_6502)) that used to work underneath it.

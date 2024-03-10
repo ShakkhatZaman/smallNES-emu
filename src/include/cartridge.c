@@ -5,9 +5,9 @@
 #include "cartridge.h"
 #include "mapper.h"
 
-static uint16_t _get_mapper_num(uint8_t header[]);
-
 static uint8_t _get_format(uint8_t header[]);
+
+static uint16_t _get_mapper_num(uint8_t header[]);
 
 static uint64_t _get_PRG_ROM_size(uint8_t header[], uint8_t format, uint8_t *num_banks);
 
@@ -19,8 +19,10 @@ int load_cartridge(char* filename, Mapper *mapper){
 	
 	fread(header, 1, 16, nes_file);
 	
-	uint16_t Mapper_num = _get_mapper_num(header);
 	uint8_t format = _get_format(header);
+	uint16_t Mapper_num = _get_mapper_num(header);
+
+    printf("Mapper number is: %d\n", Mapper_num);
 	
 	int mapper_status = load_mapper_functions(mapper, Mapper_num);
 	if (mapper_status < 0) return -1;

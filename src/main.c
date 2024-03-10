@@ -1,12 +1,14 @@
 #include <stdbool.h>
 #include <stdint.h>
 #include <stdio.h>
+#include <sys/time.h>
+
 #define SDL_MAIN_HANDLED
 #include <SDL2/SDL.h>
+
 #include "include/6502.h"
 #include "include/ppu.h"
 #include "include/cartridge.h"
-#include <sys/time.h>
 
 #define WINDOW_WIDTH 512
 #define WINDOW_HEIGHT 480

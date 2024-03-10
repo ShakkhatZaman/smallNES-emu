@@ -23,7 +23,7 @@ typedef struct {
 	PPU_Bus *p_Bus;
     int dots;
     int scanlines;
-    uint32_t screen_buffer[341 * 261];
+    uint32_t screen_buffer[DOTS * SCANLINES];
     SDL_Texture *ppu_draw_texture;
     bool frame_complete;
 } PPU;
