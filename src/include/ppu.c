@@ -3,6 +3,8 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include "ppu.h"
+#include "ppu_registers.h"
+#include "types.h"
 
 static void ppu_draw(PPU *ppu);
 static Pattern_row get_pattern_row(PPU *ppu, Byte table_index, Byte tile_num, Byte tile_y);
@@ -16,6 +18,7 @@ void ppu_clock(PPU *ppu) {
             ppu->frame_complete = true;
             SDL_UpdateTexture(ppu->ppu_draw_texture, NULL, ppu->screen_buffer, DOTS * 4);
         }
+        if (ppu->scanlines > 240) ppu->PPUSTATUS.Verticle_blank = 1;
         ppu->dots = 0;
     }
     ppu_draw(ppu);
@@ -61,45 +64,82 @@ int init_ppu(PPU *ppu, SDL_Renderer *renderer) {
 
 Byte cpu_to_ppu_read(PPU *p_ppu, Word address) {
 	address &= 0x0007;
+    Byte data = 0;
 	switch (address) {
-		case 0x0:
+		case 0x0: //PPUCTRL *** WRITE only ***
 			break;
-		case 0x1:
+
+		case 0x1: //PPUMASK *** WRITE only ***
 			break;
-		case 0x2:
+
+		case 0x2: //PPUSTATUS *** READ only ***
+            p_ppu->PPUSTATUS.PPU_open_bus = p_ppu->PPUDATA & 0x1F;
+            data = p_ppu->PPUSTATUS._;
+            p_ppu->PPUSTATUS.Verticle_blank = 0;
+            p_ppu->write_latch = 0;
 			break;
-		case 0x3:
+
+		case 0x3: //OAMADDR *** WRITE only ***
 			break;
-		case 0x4:
+
+		case 0x4: //OAMDATA *** READ / WRITE ***
 			break;
-		case 0x5:
+
+		case 0x5: //PPUSCROLL *** WRITE only ***
 			break;
-		case 0x6:
+
+		case 0x6: //PPUADDR *** WRITE only ***
 			break;
-		case 0x7:
+
+		case 0x7: //PPUDATA *** READ / WRITE ***
+            data = p_ppu->PPUDATA;
+            p_ppu->PPUDATA = ppu_read_byte(p_ppu, p_ppu->PPUADDR);
+            if (p_ppu->PPUADDR >= 0x3F00) data = p_ppu->PPUDATA;
+            if ((p_ppu->PPUADDR + p_ppu->VRAM_increment) <= 0x3FFF) p_ppu->PPUADDR += p_ppu->VRAM_increment;
 			break;
 	}
-	return p_ppu->PPU_registers[address];
+	return data;
 }
 
 Byte cpu_to_ppu_write(PPU *p_ppu, Word address, Byte data) {
 	address &= 0x0007;
 	switch (address) {
-		case 0x0:
+		case 0x0: //PPUCTRL *** WRITE only ***
+            p_ppu->PPUCTRL = (PPUCTRL_reg) data;
+            p_ppu->VRAM_increment = (p_ppu->PPUCTRL.VRAM_address_inc) ? 32 : 1;
 			break;
-		case 0x1:
+
+		case 0x1: //PPUMASK *** WRITE only ***
+            p_ppu->PPUMASK = (PPUMASK_reg) data;
 			break;
-		case 0x2:
+
+		case 0x2: //PPUSTATUS *** READ only ***
 			break;
-		case 0x3:
+
+		case 0x3: //OAMADDR *** WRITE only ***
 			break;
-		case 0x4:
+
+		case 0x4: //OAMDATA *** READ / WRITE ***
 			break;
-		case 0x5:
+
+		case 0x5: //PPUSCROLL *** WRITE only ***
 			break;
-		case 0x6:
+
+		case 0x6: //PPUADDR *** WRITE only ***
+            if (!p_ppu->write_latch) {
+                p_ppu->PPUADDR |= ((Word) data) << 8;
+                p_ppu->write_latch = 1;
+            }
+            else {
+                p_ppu->PPUADDR |= (Word) data;
+                p_ppu->write_latch = 0;
+            }
 			break;
-		case 0x7:
+
+		case 0x7: //PPUDATA *** READ / WRITE ***
+            p_ppu->PPUDATA = data;
+            ppu_write_byte(p_ppu, p_ppu->PPUADDR, data);
+            if ((p_ppu->PPUADDR + p_ppu->VRAM_increment) <= 0x3FFF) p_ppu->PPUADDR += p_ppu->VRAM_increment;
 			break;
 	}
 	return 0; // Placeholder

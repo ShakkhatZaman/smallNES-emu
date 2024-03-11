@@ -6,6 +6,7 @@
 #include <SDL2/SDL.h>
 
 #include "mapper.h"
+#include "ppu_registers.h"
 #include "types.h"
 
 #define COLORS_PER_PALETTE 4
@@ -20,7 +21,17 @@ typedef struct {
 
 typedef struct {
 	Byte PPU_registers[8];
+    // Registers
+    PPUCTRL_reg PPUCTRL;
+    PPUMASK_reg PPUMASK;
+    PPUSTATUS_reg PPUSTATUS;
+    Word PPUADDR;
+    Byte PPUDATA;
+    // Bus
 	PPU_Bus *p_Bus;
+    // Helper members
+    Byte write_latch;
+    Byte VRAM_increment;
     int dots;
     int scanlines;
     uint32_t screen_buffer[DOTS * SCANLINES];
