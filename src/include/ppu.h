@@ -4,10 +4,9 @@
 #include <stdint.h>
 #include <stdbool.h>
 #include <SDL2/SDL.h>
-#include "mapper.h"
 
-typedef uint8_t Byte;
-typedef uint16_t Word;
+#include "mapper.h"
+#include "types.h"
 
 #define COLORS_PER_PALETTE 4
 #define DOTS 341

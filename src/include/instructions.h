@@ -2,6 +2,7 @@
 #define INSTRUCTIONS_H
 
 #include "6502.h"
+#include "types.h"
 
 #define NULL_INS {NUL, NUL}
 
