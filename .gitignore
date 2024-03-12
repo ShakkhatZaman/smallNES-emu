@@ -1,4 +1,5 @@
 build/
 build2/
 build3/
+debug_build/
 tests/

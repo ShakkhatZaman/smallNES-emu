@@ -1,4 +1,5 @@
 #include <stdio.h>
+#include <string.h>
 #include "6502.h"
 #include "instructions.h"
 #include "cartridge.h"
@@ -14,16 +15,19 @@ int cpu_clock(CPU *cpu) { //main function to process status of cpu
 }
 
 void reset_cpu(CPU *cpu, CPU_Bus *cpuBus, PPU *p_ppu) {
-	cpu->PC = 0xFFFC; 				// Initializing program counter at 0xFFFC
-	cpu->A = cpu->X = cpu->Y = 0;	// All registers to 0
-	cpu->D = 0;						// Setting Decimal flag to 0
-	cpu->I = 0;						// Interrupt Disable to 0
-	cpu->C = cpu->V = cpu->N = 0;	// Carry, Overflow and Negative flags set to 0
-	cpu->Z = 1;						// Zero flag to 1 (since Accumulator is 0)
-	cpu->SP = 0x01FF;				// Stack pointer to bottom of stack (0x01FF)
-	cpu->p_Bus = cpuBus;			// Memory pointer to the memory address
-	cpu->p_ppu = p_ppu;
-	cpu->temp_byte = cpu->temp_word = 0;
+    *cpu = (CPU) {
+        .PC = 0xFFFC,                       // Initializing program counter at 0xFFFC
+        .A = 0, .X = 0, .Y = 0,             // All registers to 0
+        .D = 0,                             // Setting Decimal flag to 0
+        .I = 0,                             // Interrupt Disable to 0
+        .C = 0, .V = 0, .N = 0,             // Carry, Overflow and Negative flags set to 0
+        .Z = 1,                             // Zero flag to 1 (since Accumulator is 0)
+        .SP = 0x01FF,                       // Stack pointer to bottom of stack (0x01FF)
+        .p_Bus = cpuBus, .p_ppu = p_ppu,    // Memory pointer to the memory address
+        .temp_byte = 0, .temp_word = 0
+    };
+    memset(cpu->p_Bus->RAM, 0, 2048);
+    memset(cpu->p_Bus->APU_registers, 0, 18);
 }
 
 void init_cpu(CPU *p_cpu, int *cycles) {

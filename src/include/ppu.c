@@ -2,9 +2,11 @@
 #include <stdint.h>
 #include <stdio.h>
 #include <stdlib.h>
+#include <string.h>
+
+#include "types.h"
 #include "ppu.h"
 #include "ppu_registers.h"
-#include "types.h"
 
 static void ppu_draw(PPU *ppu);
 static Pattern_row get_pattern_row(PPU *ppu, Byte table_index, Byte tile_num, Byte tile_y);
@@ -33,18 +35,30 @@ uint32_t NES_Palette[64] = {
 };
 
 static void ppu_draw(PPU *ppu) {
-    /* if (-1 < ppu->dots && ppu->dots < DOTS && -1 < ppu->scanlines && ppu->scanlines < SCANLINES) {
+    if (-1 < ppu->dots && ppu->dots < DOTS && -1 < ppu->scanlines && ppu->scanlines < SCANLINES) {
         ppu->screen_buffer[ppu->scanlines * DOTS + ppu->dots] = (rand() % 2) ? 0x00FFFFFF : 0x000000FF;
-    }   // Noise for now */
+    }   // Noise for now
+    // puts("frame");
     // Added for debugging
 
     // TODO fill the function
 }
 
 void reset_ppu(PPU *ppu, PPU_Bus *ppu_bus) {
-    ppu->p_Bus = ppu_bus;
-    ppu->scanlines = -1;
-    ppu->dots = 0;
+    *ppu = (PPU) {
+        .PPUCTRL =  0, .PPUMASK =  0,   // ALL registers initialized with 0
+        .PPUSTATUS =  0, .PPUADDR = 0,
+        .PPUDATA = 0,
+        .p_Bus = ppu_bus,
+        .write_latch = 0,               // Write latch to 0
+        .VRAM_increment = 1,            // Default VRAM address increment to 1
+        .dots = 0, .scanlines = 0,      // Number of dots and scanlines to 0
+        .frame_complete = false         // Frame complete to false
+    };
+    memset(ppu->screen_buffer, 0, DOTS * SCANLINES * sizeof(uint32_t));
+    memset(ppu->p_Bus->Palettes, 0, 0x1F);
+    for (int i = 0; i < 4; i++)
+        memset(ppu->p_Bus->Nametable[i], 0, 1024);
 }
 
 int init_ppu(PPU *ppu, SDL_Renderer *renderer) {
@@ -53,6 +67,7 @@ int init_ppu(PPU *ppu, SDL_Renderer *renderer) {
                                              pixel_format,
                                              SDL_TEXTUREACCESS_STREAMING,
                                              DOTS, SCANLINES);
+
     if (texture == NULL) return -1;
     ppu->ppu_draw_texture = texture;
     SDL_SetRenderTarget(renderer, ppu->ppu_draw_texture);
@@ -207,3 +222,4 @@ static uint32_t get_pixel_color(PPU *ppu, Byte palette_num, Byte pixel) {
     Byte pixel_index = ppu_read_byte(ppu, (palette_num * COLORS_PER_PALETTE) + pixel);
     return NES_Palette[pixel_index & 0x3F];
 }
+
