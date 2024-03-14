@@ -9,8 +9,9 @@
 #include "ppu_registers.h"
 
 static void ppu_draw(PPU *ppu);
-static Pattern_row get_pattern_row(PPU *ppu, Byte table_index, Byte tile_num, Byte tile_y);
-static uint32_t get_pixel_color(PPU *ppu, Byte palette_num, Byte pixel);
+//DEBUG
+// static Pattern_row get_pattern_row(PPU *ppu, Byte table_index, Byte tile_num, Byte tile_y);
+// static uint32_t get_pixel_color(PPU *ppu, Byte palette_num, Byte pixel);
 
 void ppu_clock(PPU *ppu) {
     if (ppu->dots >= DOTS) {
@@ -88,6 +89,7 @@ Byte cpu_to_ppu_read(PPU *p_ppu, Word address) {
 			break;
 
 		case 0x2: //PPUSTATUS *** READ only ***
+            p_ppu->PPUSTATUS.Verticle_blank = 1;
             p_ppu->PPUSTATUS.PPU_open_bus = p_ppu->PPUDATA & 0x1F;
             data = p_ppu->PPUSTATUS._;
             p_ppu->PPUSTATUS.Verticle_blank = 0;
@@ -107,10 +109,10 @@ Byte cpu_to_ppu_read(PPU *p_ppu, Word address) {
 			break;
 
 		case 0x7: //PPUDATA *** READ / WRITE ***
-            data = p_ppu->PPUDATA;
+            data = (Byte) p_ppu->PPUDATA;
             p_ppu->PPUDATA = ppu_read_byte(p_ppu, p_ppu->PPUADDR);
             if (p_ppu->PPUADDR >= 0x3F00) data = p_ppu->PPUDATA;
-            if ((p_ppu->PPUADDR + p_ppu->VRAM_increment) <= 0x3FFF) p_ppu->PPUADDR += p_ppu->VRAM_increment;
+            p_ppu->PPUADDR += p_ppu->VRAM_increment;
 			break;
 	}
 	return data;
@@ -142,11 +144,11 @@ Byte cpu_to_ppu_write(PPU *p_ppu, Word address, Byte data) {
 
 		case 0x6: //PPUADDR *** WRITE only ***
             if (!p_ppu->write_latch) {
-                p_ppu->PPUADDR |= ((Word) data) << 8;
+                p_ppu->PPUADDR = (p_ppu->PPUADDR & 0x00FF) | (((Word) data) << 8);
                 p_ppu->write_latch = 1;
             }
             else {
-                p_ppu->PPUADDR |= (Word) data;
+                p_ppu->PPUADDR = (p_ppu->PPUADDR & 0xFF00) | (Word) data;
                 p_ppu->write_latch = 0;
             }
 			break;
@@ -154,10 +156,10 @@ Byte cpu_to_ppu_write(PPU *p_ppu, Word address, Byte data) {
 		case 0x7: //PPUDATA *** READ / WRITE ***
             p_ppu->PPUDATA = data;
             ppu_write_byte(p_ppu, p_ppu->PPUADDR, data);
-            if ((p_ppu->PPUADDR + p_ppu->VRAM_increment) <= 0x3FFF) p_ppu->PPUADDR += p_ppu->VRAM_increment;
+            p_ppu->PPUADDR += p_ppu->VRAM_increment;
 			break;
 	}
-	return 0; // Placeholder
+	return 0;
 }
 
 Byte ppu_read_byte(PPU *p_ppu, Word address) {
@@ -167,12 +169,12 @@ Byte ppu_read_byte(PPU *p_ppu, Word address) {
     if (address <= 0x1FFF)
 		p_ppu->p_Bus->mapper->ppu_read(p_ppu->p_Bus->mapper, address);
     // Inside Nametable memory
-    else if (0x2000 >= address && address <= 0x2FFF) {
+    else if (0x2000 <= address && address <= 0x2FFF) {
         Byte table_index = (address >> 10) & 0x3;
         address &= 0x3FF;
         data = p_ppu->p_Bus->Nametable[table_index][address];
     } // Inside Palette memory
-    else if (0x3F00 >= address && address <= 0x3FFF) {
+    else if (0x3F00 <= address && address <= 0x3FFF) {
         address &= 0x1F;
         address = (address == 0x10) ? 0x00 : address;
         address = (address == 0x14) ? 0x04 : address;
@@ -190,12 +192,12 @@ Byte ppu_write_byte(PPU *p_ppu, Word address, Byte data) {
     if (address <= 0x1FFF)
         p_ppu->p_Bus->mapper->ppu_write(p_ppu->p_Bus->mapper, address, data);
     // Inside Nametable memory
-    else if (0x2000 >= address && address <= 0x2FFF) {
+    else if (0x2000 <= address && address <= 0x2FFF) {
         Byte table_index = (address >> 10) & 0x3;
         address &= 0x3FF;
         p_ppu->p_Bus->Nametable[table_index][address] = data;
     } // Inside Palette memory
-    else if (0x3F00 >= address && address <= 0x3FFF) {
+    else if (0x3F00 <= address && address <= 0x3FFF) {
         address &= 0x1F;
         address = (address == 0x10) ? 0x00 : address;
         address = (address == 0x14) ? 0x04 : address;
@@ -207,7 +209,9 @@ Byte ppu_write_byte(PPU *p_ppu, Word address, Byte data) {
     return 0;
 }
 
-static Pattern_row get_pattern_row(PPU *ppu, Byte table_index, Byte tile_num, Byte tile_y) {
+// DEBUG
+// static Pattern_row get_pattern_row(PPU *ppu, Byte table_index, Byte tile_num, Byte tile_y) {
+Pattern_row get_pattern_row(PPU *ppu, Byte table_index, Byte tile_num, Byte tile_y) {
     Word address = (table_index) ? 0x1000 : 0x0000;
     address |= ((Word) tile_num) << 4;
     address |= (tile_y < 8) ? tile_y : 0;
@@ -218,8 +222,10 @@ static Pattern_row get_pattern_row(PPU *ppu, Byte table_index, Byte tile_num, By
     return row;
 }
 
-static uint32_t get_pixel_color(PPU *ppu, Byte palette_num, Byte pixel) {
-    Byte pixel_index = ppu_read_byte(ppu, (palette_num * COLORS_PER_PALETTE) + pixel);
+//DEBUG
+// static uint32_t get_pixel_color(PPU *ppu, Byte palette_num, Byte pixel) {
+uint32_t get_pixel_color(PPU *ppu, Byte palette_num, Byte pixel) {
+    Byte pixel_index = ppu->p_Bus->Palettes[(palette_num << 2) + pixel];
     return NES_Palette[pixel_index & 0x3F];
 }
 

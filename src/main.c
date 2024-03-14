@@ -1,5 +1,3 @@
-#include <SDL2/SDL_rect.h>
-#include <SDL2/SDL_render.h>
 #include <stdbool.h>
 #include <stdint.h>
 #include <stdio.h>

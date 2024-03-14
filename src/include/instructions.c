@@ -169,7 +169,6 @@ const Ins ins_table[256] = {
 Byte ABS(CPU *cpu) {
 	Word data_address = fetch_word(cpu);
 	cpu->temp_word = data_address;
-	cpu->temp_byte = cpu_read_byte(cpu, data_address);
 	cpu->current_mode = 1;
 	return 0;
 }
@@ -179,7 +178,6 @@ Byte ABX(CPU *cpu) {
 	cpu_clock(cpu);
 	Word data_address_x = data_address + cpu->X;
 	cpu->temp_word = data_address_x;
-	cpu->temp_byte = cpu_read_byte(cpu, data_address_x);
 	cpu->current_mode = 2;
 	if ((data_address & 0xFF00) == (data_address_x & 0xFF00))
 		return 0;
@@ -194,7 +192,6 @@ Byte ABY(CPU *cpu) {
 	cpu_clock(cpu);
 	Word data_address_y = data_address + cpu->Y;
 	cpu->temp_word = data_address_y;
-	cpu->temp_byte = cpu_read_byte(cpu, data_address_y);
 	cpu->current_mode = 3;
 	if ((data_address & 0xFF00) == (data_address_y & 0xFF00))
 		return 0;
@@ -225,7 +222,7 @@ Byte IND(CPU *cpu) {
 	Word data_address = fetch_word(cpu);
 	Byte byte_data = cpu_read_byte(cpu, data_address);
 	cpu_clock(cpu);
-	Word word_data;
+	Word word_data = 0;
 
 	if ((data_address & 0x00FF) == 0x00FF) {
 		word_data = (((Word) cpu_read_byte(cpu, data_address & 0xFF00)) << 8) | ((Word) byte_data);
@@ -266,8 +263,8 @@ Byte IZY(CPU *cpu) {
 	Word word_data = (((Word) cpu_read_byte(cpu, full_zp_address_y + 1)) << 8) | ((Word) byte_data);
 	cpu_clock(cpu);
 	Word temp_word_data = (Word) cpu->Y + word_data;
-	cpu->temp_word = word_data;
-	cpu->temp_byte = cpu_read_byte(cpu, word_data);
+	cpu->temp_word = temp_word_data;
+	cpu->temp_byte = cpu_read_byte(cpu, temp_word_data);
 	cpu->current_mode = 9;
 	if ((temp_word_data & 0xFF00) == (word_data & 0xFF00))
 		return 0;
@@ -322,6 +319,7 @@ Byte ZPY(CPU *cpu) {
 /*Operation functions*/
 
 Byte ADC(CPU *cpu) {
+	if (cpu->current_mode == 1 || cpu->current_mode == 2 || cpu->current_mode == 3) cpu->temp_byte = cpu_read_byte(cpu, cpu->temp_word);
 	Word acc = (Word) cpu->A;
 	Word tmp_byte = (Word) cpu->temp_byte;
 	Word temp_sum = acc + tmp_byte + cpu->C;
@@ -338,6 +336,7 @@ Byte ADC(CPU *cpu) {
 }
 
 Byte AND(CPU *cpu){
+	if (cpu->current_mode == 1 || cpu->current_mode == 2 || cpu->current_mode == 3) cpu->temp_byte = cpu_read_byte(cpu, cpu->temp_word);
 	if (cpu->current_mode == 1)
 		cpu_clock(cpu);
 	cpu->A &= cpu->temp_byte;
@@ -355,6 +354,7 @@ Byte ASL(CPU *cpu){
 		cpu->N = (cpu->A & 0x80) ? 1 : 0;
 	}
 	else {
+	    if (cpu->current_mode == 1 || cpu->current_mode == 2 || cpu->current_mode == 3) cpu->temp_byte = cpu_read_byte(cpu, cpu->temp_word);
 		cpu->C = (cpu->temp_byte & 0x80) ? 1 : 0;
 		cpu_clock(cpu);
 		cpu->temp_byte >>= 1;
@@ -394,6 +394,7 @@ Byte BEQ(CPU *cpu){
 Byte BIT(CPU *cpu){
 	if (cpu->current_mode == 1)
 		cpu_clock(cpu);
+	if (cpu->current_mode == 1 || cpu->current_mode == 2 || cpu->current_mode == 3) cpu->temp_byte = cpu_read_byte(cpu, cpu->temp_word);
 	cpu->N = (cpu->temp_byte & 0b10000000) ? 1 : 0;
 	cpu->V = (cpu->temp_byte & 0b01000000) ? 1 : 0;
 	cpu->Z = (cpu->temp_byte & cpu->A) ? 0 : 1;
@@ -483,45 +484,49 @@ Byte CLV(CPU *cpu){
 }
 
 Byte CMP(CPU *cpu){
-	Word result = (Word) cpu->A;
+	if (cpu->current_mode == 1 || cpu->current_mode == 2 || cpu->current_mode == 3) cpu->temp_byte = cpu_read_byte(cpu, cpu->temp_word);
+	Word a = (Word) cpu->A;
 	Word mem = (Word) cpu->temp_byte;
-	result += (~mem + 1);
+	Word result = a - mem;
 	if (cpu->current_mode == 1)
 		cpu_clock(cpu);
-	cpu->C = (result > 256) ? 1 : 0;
-	cpu->Z = (result == 0) ? 1 : 0;
+	cpu->C = (a >= mem) ? 1 : 0;
+	cpu->Z = ((result & 0xFF) == 0) ? 1 : 0;
 	cpu->N = (result & 0x80) ? 1 : 0;
 	cpu_clock(cpu);
 	return 0;
 }
 
 Byte CPX(CPU *cpu){
-	Word result = (Word) cpu->X;
+	if (cpu->current_mode == 1 || cpu->current_mode == 2 || cpu->current_mode == 3) cpu->temp_byte = cpu_read_byte(cpu, cpu->temp_word);
+	Word x = (Word) cpu->X;
 	Word mem = (Word) cpu->temp_byte;
-	result += (~mem + 1);
+	Word result = x - mem;
 	if (cpu->current_mode == 1)
 		cpu_clock(cpu);
-	cpu->C = (result > 256) ? 1 : 0;
-	cpu->Z = (result == 0) ? 1 : 0;
+	cpu->C = (x >= mem) ? 1 : 0;
+	cpu->Z = ((result & 0xFF) == 0) ? 1 : 0;
 	cpu->N = (result & 0x80) ? 1 : 0;
 	cpu_clock(cpu);
 	return 0;
 }
 
 Byte CPY(CPU *cpu){
-	Word result = (Word) cpu->Y;
+	if (cpu->current_mode == 1 || cpu->current_mode == 2 || cpu->current_mode == 3) cpu->temp_byte = cpu_read_byte(cpu, cpu->temp_word);
+	Word y = (Word) cpu->Y;
 	Word mem = (Word) cpu->temp_byte;
-	result += (~mem + 1);
+	Word result = y - mem;
 	if (cpu->current_mode == 1)
 		cpu_clock(cpu);
-	cpu->C = (result > 256) ? 1 : 0;
-	cpu->Z = (result == 0) ? 1 : 0;
+	cpu->C = (y >= mem) ? 1 : 0;
+	cpu->Z = ((result & 0xFF) == 0) ? 1 : 0;
 	cpu->N = (result & 0x80) ? 1 : 0;
 	cpu_clock(cpu);
 	return 0;
 }
 
 Byte DEC(CPU *cpu){
+	if (cpu->current_mode == 1 || cpu->current_mode == 2 || cpu->current_mode == 3) cpu->temp_byte = cpu_read_byte(cpu, cpu->temp_word);
 	cpu->temp_byte -= 1; 
 	cpu_clock(cpu);
 	cpu_write_byte(cpu, cpu->temp_word, cpu->temp_byte);
@@ -551,6 +556,7 @@ Byte DEY(CPU *cpu){
 }
 
 Byte EOR(CPU *cpu){
+	if (cpu->current_mode == 1 || cpu->current_mode == 2 || cpu->current_mode == 3) cpu->temp_byte = cpu_read_byte(cpu, cpu->temp_word);
 	cpu->A ^= cpu->temp_byte;
 	if (cpu->current_mode == 1)
 		cpu_clock(cpu);
@@ -561,6 +567,7 @@ Byte EOR(CPU *cpu){
 }
 
 Byte INC(CPU *cpu){
+	if (cpu->current_mode == 1 || cpu->current_mode == 2 || cpu->current_mode == 3) cpu->temp_byte = cpu_read_byte(cpu, cpu->temp_word);
 	cpu->temp_byte += 1; 
 	cpu_clock(cpu);
 	cpu_write_byte(cpu, cpu->temp_word, cpu->temp_byte);
@@ -608,6 +615,7 @@ Byte JSR(CPU *cpu){
 }
 
 Byte LDA(CPU *cpu){
+	if (cpu->current_mode == 1 || cpu->current_mode == 2 || cpu->current_mode == 3) cpu->temp_byte = cpu_read_byte(cpu, cpu->temp_word);
 	cpu->A = cpu->temp_byte;
 	if (cpu->current_mode == 1)
 		cpu_clock(cpu);
@@ -617,6 +625,7 @@ Byte LDA(CPU *cpu){
 }
 
 Byte LDX(CPU *cpu){
+	if (cpu->current_mode == 1 || cpu->current_mode == 2 || cpu->current_mode == 3) cpu->temp_byte = cpu_read_byte(cpu, cpu->temp_word);
 	cpu->X = cpu->temp_byte;
 	if (cpu->current_mode == 1)
 		cpu_clock(cpu);
@@ -627,6 +636,7 @@ Byte LDX(CPU *cpu){
 }
 
 Byte LDY(CPU *cpu){
+	if (cpu->current_mode == 1 || cpu->current_mode == 2 || cpu->current_mode == 3) cpu->temp_byte = cpu_read_byte(cpu, cpu->temp_word);
 	cpu->Y = cpu->temp_byte;
 	if (cpu->current_mode == 1)
 		cpu_clock(cpu);
@@ -644,6 +654,7 @@ Byte LSR(CPU *cpu){
 		cpu->N = (cpu->A & 0x80) ? 1 : 0;
 	}
 	else {
+	    if (cpu->current_mode == 1 || cpu->current_mode == 2 || cpu->current_mode == 3) cpu->temp_byte = cpu_read_byte(cpu, cpu->temp_word);
 		cpu->C = (cpu->temp_byte & 1) ? 1 : 0;
 		cpu_clock(cpu);
 		cpu->temp_byte >>= 1;
@@ -664,6 +675,7 @@ Byte NOP(CPU *cpu){
 }
 
 Byte ORA(CPU *cpu){
+	if (cpu->current_mode == 1 || cpu->current_mode == 2 || cpu->current_mode == 3) cpu->temp_byte = cpu_read_byte(cpu, cpu->temp_word);
 	cpu->A |= cpu->temp_byte;
 	if (cpu->current_mode == 1)
 		cpu_clock(cpu);
@@ -730,6 +742,7 @@ Byte ROL(CPU *cpu){
 		cpu->N = (cpu->A & 0x80) ? 1 : 0;
 	}
 	else {
+	    if (cpu->current_mode == 1 || cpu->current_mode == 2 || cpu->current_mode == 3) cpu->temp_byte = cpu_read_byte(cpu, cpu->temp_word);
 		cpu->C = (cpu->temp_byte & 0x80) ? 1 : 0;
 		cpu_clock(cpu);
 		cpu->temp_byte <<= 1;
@@ -754,6 +767,7 @@ Byte ROR(CPU *cpu){
 		cpu->N = (cpu->A & 0x80) ? 1 : 0;
 	}
 	else {
+	    if (cpu->current_mode == 1 || cpu->current_mode == 2 || cpu->current_mode == 3) cpu->temp_byte = cpu_read_byte(cpu, cpu->temp_word);
 		cpu->C = (cpu->temp_byte & 1) ? 1 : 0;
 		cpu_clock(cpu);
 		cpu->temp_byte >>= 1;
@@ -802,6 +816,7 @@ Byte RTS(CPU *cpu){
 }
 
 Byte SBC(CPU *cpu){
+	if (cpu->current_mode == 1 || cpu->current_mode == 2 || cpu->current_mode == 3) cpu->temp_byte = cpu_read_byte(cpu, cpu->temp_word);
 	Word acc = (Word) cpu->A;
 	Word tmp_byte = ((Word) cpu->temp_byte) ^ 0x00FF;
 	Word temp_sum = acc + tmp_byte + cpu->C;
