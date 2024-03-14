@@ -6,15 +6,12 @@
 #define SDL_MAIN_HANDLED
 #include <SDL2/SDL.h>
 
-//DEBUG
-#include "include/debug.h"
-
 #include "include/6502.h"
 #include "include/ppu.h"
 #include "include/cartridge.h"
 
-// #define WINDOW_WIDTH 512
-// #define WINDOW_HEIGHT 480
+#define WINDOW_WIDTH 512
+#define WINDOW_HEIGHT 480
 
 CPU cpu;
 PPU ppu;
@@ -68,14 +65,7 @@ static void manage_events(SDL_Event *p_event) {
 
 static void draw_to_screen(void) {
     if (ppu.frame_complete) {
-        // SDL_RenderCopy(renderer, (void *)ppu.ppu_draw_texture, NULL, NULL);
-        //
-        // DEBUG
-        debug_draw(&ppu);
-
-        SDL_RenderCopy(renderer, (void *)ppu.ppu_draw_texture, NULL, &ppu_screen_rect);
-        SDL_RenderCopy(renderer, (void *)debug_texture, NULL, &debug_rect);
-
+        SDL_RenderCopy(renderer, (void *)ppu.ppu_draw_texture, NULL, NULL);
         SDL_RenderPresent(renderer);
         ppu.frame_complete = false;
         update_fps();
@@ -100,18 +90,6 @@ static int init_emulator(int argc, Mapper *p_mapper, char *argv[]) {
 	init_cpu(&cpu, &cycle_count);
     status = init_ppu(&ppu, renderer);
     if (status < 0) return -1;
-
-    // DEBUG
-    debug_texture = SDL_CreateTexture(renderer,
-                                      debug_pixel_format,
-                                      SDL_TEXTUREACCESS_STREAMING,
-                                      256, 240); //DEBUG SCREEN WIDTH AND HEIGHT
-
-    SDL_SetRenderTarget(renderer, debug_texture);
-    SDL_SetRenderDrawColor(renderer, 0, 0, 0, 255);
-    SDL_RenderClear(renderer);
-    SDL_SetRenderTarget(renderer, NULL);
-
     return 0;
 }
 

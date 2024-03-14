@@ -1,8 +1,6 @@
 #ifndef PPU_REGISTERS_H
 #define PPU_REGISTERS_H
 
-#include <stdint.h>
-
 #include "types.h"
 
 typedef union {

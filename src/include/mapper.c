@@ -1,5 +1,6 @@
-#include "mapper.h"
 #include <stdio.h>
+
+#include "mapper.h"
 
 int load_mapper_functions(Mapper *mapper, uint16_t mapper_num) {
 	mapper->mapper_num = mapper_num;

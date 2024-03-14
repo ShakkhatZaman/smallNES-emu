@@ -1,8 +1,10 @@
 #include <stdio.h>
 #include <string.h>
+
 #include "6502.h"
 #include "instructions.h"
 #include "cartridge.h"
+#include "ppu.h"
 
 int *p_total_cycles;
 

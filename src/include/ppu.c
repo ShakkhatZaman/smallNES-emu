@@ -9,9 +9,8 @@
 #include "ppu_registers.h"
 
 static void ppu_draw(PPU *ppu);
-//DEBUG
-// static Pattern_row get_pattern_row(PPU *ppu, Byte table_index, Byte tile_num, Byte tile_y);
-// static uint32_t get_pixel_color(PPU *ppu, Byte palette_num, Byte pixel);
+static Pattern_row get_pattern_row(PPU *ppu, Byte table_index, Byte tile_num, Byte tile_y);
+static uint32_t get_pixel_color(PPU *ppu, Byte palette_num, Byte pixel);
 
 void ppu_clock(PPU *ppu) {
     if (ppu->dots >= DOTS) {
@@ -39,7 +38,6 @@ static void ppu_draw(PPU *ppu) {
     if (-1 < ppu->dots && ppu->dots < DOTS && -1 < ppu->scanlines && ppu->scanlines < SCANLINES) {
         ppu->screen_buffer[ppu->scanlines * DOTS + ppu->dots] = (rand() % 2) ? 0x00FFFFFF : 0x000000FF;
     }   // Noise for now
-    // puts("frame");
     // Added for debugging
 
     // TODO fill the function
@@ -209,9 +207,7 @@ Byte ppu_write_byte(PPU *p_ppu, Word address, Byte data) {
     return 0;
 }
 
-// DEBUG
-// static Pattern_row get_pattern_row(PPU *ppu, Byte table_index, Byte tile_num, Byte tile_y) {
-Pattern_row get_pattern_row(PPU *ppu, Byte table_index, Byte tile_num, Byte tile_y) {
+static Pattern_row get_pattern_row(PPU *ppu, Byte table_index, Byte tile_num, Byte tile_y) {
     Word address = (table_index) ? 0x1000 : 0x0000;
     address |= ((Word) tile_num) << 4;
     address |= (tile_y < 8) ? tile_y : 0;
@@ -222,9 +218,7 @@ Pattern_row get_pattern_row(PPU *ppu, Byte table_index, Byte tile_num, Byte tile
     return row;
 }
 
-//DEBUG
-// static uint32_t get_pixel_color(PPU *ppu, Byte palette_num, Byte pixel) {
-uint32_t get_pixel_color(PPU *ppu, Byte palette_num, Byte pixel) {
+static uint32_t get_pixel_color(PPU *ppu, Byte palette_num, Byte pixel) {
     Byte pixel_index = ppu->p_Bus->Palettes[(palette_num << 2) + pixel];
     return NES_Palette[pixel_index & 0x3F];
 }

@@ -58,8 +58,4 @@ Byte cpu_to_ppu_read(PPU *p_ppu, Word address);
 
 Byte cpu_to_ppu_write(PPU *p_ppu, Word address, Byte data);
 
-// DEBUG
-Pattern_row get_pattern_row(PPU *ppu, Byte table_index, Byte tile_num, Byte tile_y);
-uint32_t get_pixel_color(PPU *ppu, Byte palette_num, Byte pixel);
-
 #endif //PPU_H

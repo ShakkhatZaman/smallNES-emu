@@ -1,5 +1,6 @@
 #ifndef MAPPER_H
 #define MAPPER_H
+
 #include <stdint.h>
 
 typedef struct Mapper{

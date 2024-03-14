@@ -2,6 +2,7 @@
 #define CARTRIDGE_H
 
 #include <stdint.h>
+
 #include "mapper.h"
 
 int load_cartridge(char* filename, Mapper *mapper);
