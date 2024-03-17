@@ -9,9 +9,14 @@
 #include "ppu_registers.h"
 #include "types.h"
 
+#define NES_WIDTH 256
+#define NES_HEIGHT 240
+
 #define COLORS_PER_PALETTE 4
+
 #define DOTS 341
 #define SCANLINES 261
+
 
 typedef struct {
 	Byte Nametable[4][1024];// 4KB for nametables ->		$2000 - $2FFF
@@ -34,9 +39,13 @@ typedef struct {
     Byte VRAM_increment;
     int dots;
     int scanlines;
-    uint32_t screen_buffer[DOTS * SCANLINES];
+    //DEBUG
+    // uint32_t screen_buffer[DOTS * SCANLINES];
+    uint32_t screen_buffer[NES_WIDTH * NES_HEIGHT];
+
     SDL_Texture *ppu_draw_texture;
     bool frame_complete;
+    bool create_nmi;
 } PPU;
 
 typedef struct {
@@ -59,7 +68,8 @@ Byte cpu_to_ppu_read(PPU *p_ppu, Word address);
 Byte cpu_to_ppu_write(PPU *p_ppu, Word address, Byte data);
 
 // DEBUG
-Pattern_row get_pattern_row(PPU *ppu, Byte table_index, Byte tile_num, Byte tile_y);
+Pattern_row get_pattern_row(PPU *ppu, Byte table_index, Byte plane_num, Byte plane_y);
 uint32_t get_pixel_color(PPU *ppu, Byte palette_num, Byte pixel);
+void draw_pixel_row(PPU *ppu, Pattern_row pattern_row, uint32_t *buffer, Byte palette_num, int row_x, int y);
 
 #endif //PPU_H

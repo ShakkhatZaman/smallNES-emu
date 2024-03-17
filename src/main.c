@@ -8,6 +8,12 @@
 
 //DEBUG
 #include "include/debug.h"
+#include "include/logging.h"
+
+#ifdef CREATE_LOGS
+    FILE *log_file;
+#endif /* ifdef CREATE_LOGS */
+
 
 #include "include/6502.h"
 #include "include/ppu.h"
@@ -15,6 +21,11 @@
 
 // #define WINDOW_WIDTH 512
 // #define WINDOW_HEIGHT 480
+
+typedef struct timer {
+	uint64_t start_time;
+	uint64_t duration;
+} timer;
 
 CPU cpu;
 PPU ppu;
@@ -25,6 +36,9 @@ bool emulator_running = false;
 uint64_t current_time;
 double FPS;
 char FPS_str[12];
+timer fps_timer = {
+    .duration = 100000,
+};
 
 SDL_Window *window;
 SDL_Renderer *renderer;
@@ -44,11 +58,15 @@ int main(int argc, char *argv[]){
 
 	Mapper mapper;
     status = init_emulator(argc, &mapper, argv);
-    if (status < 0) return -1;
+    if (status < 0) {
+        exit_emulator(argc);
+        return -1;
+    };
 
 	printf("Starting Emulator...\n");
 
 	emulator_running = true;
+    fps_timer.start_time = get_time_us();
 	while (emulator_running) {
         manage_events(&event);
 		execute_cpu_ppu(&cpu);
@@ -57,13 +75,14 @@ int main(int argc, char *argv[]){
 
 	printf("Exiting Emulator\n %d", cycle_count);
     exit_emulator(argc);
-    
+
 	return 0;
 }
 
 static void manage_events(SDL_Event *p_event) {
     SDL_PollEvent(p_event);
     if (event.type == SDL_QUIT) emulator_running = false;
+    if (event.type == SDL_KEYDOWN && event.key.keysym.sym == SDLK_SPACE) current_palette = (current_palette == 7) ? 0 : current_palette + 1;
 }
 
 static void draw_to_screen(void) {
@@ -92,6 +111,11 @@ static int init_emulator(int argc, Mapper *p_mapper, char *argv[]) {
 
     reset_cpu(&cpu, &cpu_bus, &ppu);
     reset_ppu(&ppu, &ppu_bus);
+
+    //DEBUG
+#ifdef CREATE_LOGS
+    GET_LOG_FILE("log_file.txt");
+#endif
     
     int status = load_cartridge(argv[1], p_mapper);
 	if (status < 0) return -1;
@@ -111,7 +135,6 @@ static int init_emulator(int argc, Mapper *p_mapper, char *argv[]) {
     SDL_SetRenderDrawColor(renderer, 0, 0, 0, 255);
     SDL_RenderClear(renderer);
     SDL_SetRenderTarget(renderer, NULL);
-
     return 0;
 }
 
@@ -135,13 +158,21 @@ static void exit_emulator(int argc) {
     SDL_DestroyRenderer(renderer);
     SDL_DestroyTexture(ppu.ppu_draw_texture);
     SDL_Quit();
+
+    //DEBUG
+#ifdef CREATE_LOGS
+    CLOSE_LOG_FILE();
+#endif
 }
 
 static void update_fps(void) {
-    FPS = 1e6 / (double) (get_time_us() - current_time);
-    snprintf(FPS_str, 12, "%.12f", FPS); 
+	if (get_time_us() >= (fps_timer.start_time + fps_timer.duration)) {
+        FPS = 1e6 / (double) (get_time_us() - current_time);
+        snprintf(FPS_str, 12, "%.12f", FPS); 
+        SDL_SetWindowTitle(window, FPS_str);
+		fps_timer.start_time = get_time_us();
+	}
     current_time = get_time_us();
-    SDL_SetWindowTitle(window, FPS_str);
 }
 
 static uint64_t get_time_us(void) {

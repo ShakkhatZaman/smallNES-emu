@@ -15,7 +15,6 @@ Byte fetch_byte(CPU *cpu) {
 	Word counter = cpu->PC;
 	cpu->PC = (counter == 0xFFFF) ? 0x8000 : counter + 1;
 	Byte data = 0x00;
-	//printf("%x\n", cpu->PC);
 	if (counter >= 0x4020)
 		data = cpu->p_Bus->mapper->cpu_read(cpu->p_Bus->mapper, counter);
 	return data;
