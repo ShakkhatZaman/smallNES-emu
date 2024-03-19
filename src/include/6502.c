@@ -8,6 +8,7 @@
 
 // DEBUG
 #include "logging.h"
+#include "ppu.h"
 
 int *p_total_cycles;
 
@@ -65,7 +66,7 @@ void execute_cpu_ppu(CPU *p_cpu) {
 
     //DEBUG
 #ifdef CREATE_LOGS 
-    LOG_MESSAGE("ins : %x, PC : %x, A : %d, X : %d, Y : %d, tmp_addr: %x\n", op_code, p_cpu->PC, p_cpu->A, p_cpu->X, p_cpu->Y, p_cpu->temp_word);
+    LOG_MESSAGE("cycles: %d, ins : %x, PC : %x, A : %d, X : %d, Y : %d, tmp_addr: %x\n", *p_total_cycles, op_code, p_cpu->PC, p_cpu->A, p_cpu->X, p_cpu->Y, p_cpu->temp_word);
 #endif
 }
 

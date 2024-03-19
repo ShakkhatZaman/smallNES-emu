@@ -92,6 +92,8 @@ static void _check_page_crossed(CPU *cpu) {
 
 void cpu_irq(CPU *cpu) {
     if (!(cpu->I)) {
+        cpu->PC += 1;
+        cpu_clock(cpu);
         stack_push(cpu, (Byte) (cpu->PC >> 8));
         cpu_clock(cpu);
         stack_push(cpu, (Byte) cpu->PC);
@@ -99,7 +101,6 @@ void cpu_irq(CPU *cpu) {
         Byte SR = 0;
         SR |= (cpu->N) ? 0x80 : 0;
         SR |= (cpu->V) ? 0x40 : 0;
-        SR |= (cpu->B) ? 0x10 : 0;
         SR |= (cpu->D) ? 0x8 : 0;
         SR |= (cpu->I) ? 0x4 : 0;
         SR |= (cpu->Z) ? 0x2 : 0;
@@ -107,17 +108,16 @@ void cpu_irq(CPU *cpu) {
         stack_push(cpu, SR);
         cpu_clock(cpu);
         cpu->I = 1;
-        cpu_clock(cpu);
         Word new_address = cpu_read_byte(cpu, 0xFFFE);
         cpu_clock(cpu);
         new_address |= ((Word) cpu_read_byte(cpu, 0xFFFF)) << 8;
-        cpu_clock(cpu);
         cpu->PC = new_address;
         cpu_clock(cpu);
     }
 }
 
 void cpu_nmi(CPU *cpu) {
+    cpu->PC += 1;
     cpu_clock(cpu);
     stack_push(cpu, (Byte) (cpu->PC >> 8));
     cpu_clock(cpu);
@@ -126,7 +126,6 @@ void cpu_nmi(CPU *cpu) {
     Byte SR = 0;
     SR |= (cpu->N) ? 0x80 : 0;
     SR |= (cpu->V) ? 0x40 : 0;
-    SR |= (cpu->B) ? 0x10 : 0;
     SR |= (cpu->D) ? 0x8 : 0;
     SR |= (cpu->I) ? 0x4 : 0;
     SR |= (cpu->Z) ? 0x2 : 0;
@@ -134,11 +133,9 @@ void cpu_nmi(CPU *cpu) {
     stack_push(cpu, SR);
     cpu_clock(cpu);
     cpu->I = 1;
+    Word new_address = cpu_read_byte(cpu, 0xFFFA);
     cpu_clock(cpu);
-    Word new_address = cpu_read_byte(cpu, 0xFFFE);
-    cpu_clock(cpu);
-    new_address |= ((Word) cpu_read_byte(cpu, 0xFFFF)) << 8;
-    cpu_clock(cpu);
+    new_address |= ((Word) cpu_read_byte(cpu, 0xFFFB)) << 8;
     cpu->PC = new_address;
     cpu_clock(cpu);
 }
@@ -340,7 +337,7 @@ Byte AND(CPU *cpu){
 		cpu_clock(cpu);
 	cpu->A &= cpu->temp_byte;
 	cpu->Z = (cpu->A == 0) ? 1 : 0;
-	cpu->N = (cpu->A & 0x80) >> 7;
+	cpu->N = (cpu->A & 0x80) ? 1 : 0;
 	cpu_clock(cpu);
 	return 0;
 }
@@ -348,7 +345,7 @@ Byte AND(CPU *cpu){
 Byte ASL(CPU *cpu){
 	if (cpu->current_mode == 4){
 		cpu->C = (cpu->A & 0x80) ? 1 : 0;
-		cpu->A = cpu->A << 1;
+		cpu->A <<= 1;
 		cpu->Z = (cpu->A == 0) ? 1 : 0;
 		cpu->N = (cpu->A & 0x80) ? 1 : 0;
 	}
@@ -423,6 +420,7 @@ Byte BPL(CPU *cpu){
 }
 
 Byte BRK(CPU *cpu){
+    cpu->PC += 1;
 	stack_push(cpu, (Byte) (cpu->PC >> 8));
 	cpu_clock(cpu);
 	stack_push(cpu, (Byte) (cpu->PC));
@@ -430,17 +428,20 @@ Byte BRK(CPU *cpu){
 	Byte SR = 0;
 	SR |= (cpu->N) ? 0x80 : 0;
 	SR |= (cpu->V) ? 0x40 : 0;
-	SR |= (cpu->B) ? 0x10 : 0;
+	SR |= 0x10;
 	SR |= (cpu->D) ? 0x8 : 0;
 	SR |= (cpu->I) ? 0x4 : 0;
 	SR |= (cpu->Z) ? 0x2 : 0;
 	SR |= (cpu->C) ? 0x1 : 0;
+	stack_push(cpu, SR);
 	cpu_clock(cpu);
 	cpu->I = 1;
 	cpu_clock(cpu);
-	stack_push(cpu, SR);
-	cpu_clock(cpu);
-	cpu_clock(cpu);
+    Word new_address = cpu_read_byte(cpu, 0xFFFE);
+    cpu_clock(cpu);
+    new_address |= ((Word) cpu_read_byte(cpu, 0xFFFF)) << 8;
+    cpu->PC = new_address;
+    cpu_clock(cpu);
 	return 0;
 }
 
@@ -898,7 +899,7 @@ Byte TSX(CPU *cpu){
 }
 
 Byte TXA(CPU *cpu){
-	cpu->X = cpu->A;
+	cpu->A = cpu->X;
 	cpu->Z = (cpu->X == 0) ? 1 : 0;
 	cpu->N = (cpu->X & 0x80) ? 1 : 0;
 	cpu_clock(cpu);
@@ -913,7 +914,7 @@ Byte TXS(CPU *cpu){
 }
 
 Byte TYA(CPU *cpu){
-	cpu->Y = cpu->A;
+	cpu->A = cpu->Y;
 	cpu->Z = (cpu->Y == 0) ? 1 : 0;
 	cpu->N = (cpu->Y & 0x80) ? 1 : 0;
 	cpu_clock(cpu);

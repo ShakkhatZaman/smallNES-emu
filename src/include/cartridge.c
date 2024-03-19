@@ -22,10 +22,11 @@ int load_cartridge(char* filename, Mapper *mapper){
 	
 	uint8_t format = _get_format(header);
 	uint16_t Mapper_num = _get_mapper_num(header);
+    enum Mirror_type mirroring = (header[6] & 0x1) ? HORIZONTAL : VERTICAL;
 
     printf("Mapper number is: %d\n", Mapper_num);
 	
-	int mapper_status = load_mapper_functions(mapper, Mapper_num);
+	int mapper_status = load_mapper_functions(mapper, Mapper_num, mirroring);
 	if (mapper_status < 0) return -1;
 
 	if (header[6] & 0x04)

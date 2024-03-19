@@ -4,6 +4,7 @@
 #include <stdlib.h>
 #include <string.h>
 
+#include "mapper.h"
 #include "types.h"
 #include "ppu.h"
 #include "ppu_registers.h"
@@ -163,7 +164,7 @@ Byte cpu_to_ppu_write(PPU *p_ppu, Word address, Byte data) {
 
 		case 0x6: //PPUADDR *** WRITE only ***
             if (!p_ppu->write_latch) {
-                p_ppu->PPUADDR = (p_ppu->PPUADDR & 0x00FF) | (((Word) data) << 8);
+                p_ppu->PPUADDR = (p_ppu->PPUADDR & 0x00FF) | (((Word) data & 0x3F) << 8);
                 p_ppu->write_latch = 1;
             }
             else {
@@ -191,6 +192,12 @@ Byte ppu_read_byte(PPU *p_ppu, Word address) {
     else if (0x2000 <= address && address <= 0x2FFF) {
         Byte table_index = (address >> 10) & 0x3;
         address &= 0x3FF;
+        //Mirroring
+        if (p_ppu->p_Bus->mapper->mirroring == HORIZONTAL)
+            table_index = (table_index & 0x2) ? 2 : 0;
+        else
+            table_index = (table_index & 0x1) ? 1 : 0;
+
         data = p_ppu->p_Bus->Nametable[table_index][address];
     } // Inside Palette memory
     else if (0x3F00 <= address && address <= 0x3FFF) {
@@ -214,6 +221,12 @@ Byte ppu_write_byte(PPU *p_ppu, Word address, Byte data) {
     else if (0x2000 <= address && address <= 0x2FFF) {
         Byte table_index = (address >> 10) & 0x3;
         address &= 0x3FF;
+        //Mirroring
+        if (p_ppu->p_Bus->mapper->mirroring == HORIZONTAL)
+            table_index = (table_index & 0x2) ? 2 : 0;
+        else
+            table_index = (table_index & 0x1) ? 1 : 0;
+
         p_ppu->p_Bus->Nametable[table_index][address] = data;
     } // Inside Palette memory
     else if (0x3F00 <= address && address <= 0x3FFF) {

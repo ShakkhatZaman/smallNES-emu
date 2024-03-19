@@ -114,7 +114,7 @@ static int init_emulator(int argc, Mapper *p_mapper, char *argv[]) {
 
     //DEBUG
 #ifdef CREATE_LOGS
-    GET_LOG_FILE("log_file.txt");
+    GET_LOG_FILE("donkey_kong_log_file.txt");
 #endif
     
     int status = load_cartridge(argv[1], p_mapper);

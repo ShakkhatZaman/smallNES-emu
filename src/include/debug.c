@@ -47,6 +47,15 @@ void debug_draw(PPU *ppu) {
         }
     }
 
+    for (int y = 0; y < (128 / 8); y++) {
+        for (int x = 0; x < (128 / 8); x++) {
+            for (int i = 0; i < 8; i++) {
+                Pattern_row row = get_pattern_row(ppu, 1, (Byte) ((y << 4) | x ) , i);
+                draw_pixel_row(ppu, row, debug_screen_buffer, current_palette, (x * 8) + 128, (y * 8) + 40 + i);
+            }
+        }
+    }
+
     // draw pattern table
     SDL_UpdateTexture(debug_texture, NULL, (void *)debug_screen_buffer, 256 * sizeof(uint32_t));
     return;
