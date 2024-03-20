@@ -105,69 +105,69 @@ int init_ppu(PPU *ppu, SDL_Renderer *renderer) {
 }
 
 Byte cpu_to_ppu_read(PPU *p_ppu, Word address) {
-	address &= 0x0007;
+    address &= 0x0007;
     Byte data = 0;
-	switch (address) {
-		case 0x0: //PPUCTRL *** WRITE only ***
-			break;
+    switch (address) {
+        case 0x0: //PPUCTRL *** WRITE only ***
+        break;
 
-		case 0x1: //PPUMASK *** WRITE only ***
-			break;
+        case 0x1: //PPUMASK *** WRITE only ***
+        break;
 
-		case 0x2: //PPUSTATUS *** READ only ***
+        case 0x2: //PPUSTATUS *** READ only ***
             p_ppu->PPUSTATUS.PPU_open_bus = p_ppu->PPUDATA & 0x1F;
             data = p_ppu->PPUSTATUS._;
             p_ppu->PPUSTATUS.Verticle_blank = 0;
             p_ppu->write_latch = 0;
-			break;
+        break;
 
-		case 0x3: //OAMADDR *** WRITE only ***
-			break;
+        case 0x3: //OAMADDR *** WRITE only ***
+        break;
 
-		case 0x4: //OAMDATA *** READ / WRITE ***
-			break;
+        case 0x4: //OAMDATA *** READ / WRITE ***
+        break;
 
-		case 0x5: //PPUSCROLL *** WRITE only ***
-			break;
+        case 0x5: //PPUSCROLL *** WRITE only ***
+        break;
 
-		case 0x6: //PPUADDR *** WRITE only ***
-			break;
+        case 0x6: //PPUADDR *** WRITE only ***
+        break;
 
-		case 0x7: //PPUDATA *** READ / WRITE ***
+        case 0x7: //PPUDATA *** READ / WRITE ***
             data = (Byte) p_ppu->PPUDATA;
             p_ppu->PPUDATA = ppu_read_byte(p_ppu, p_ppu->PPUADDR);
             if (p_ppu->PPUADDR >= 0x3F00) data = p_ppu->PPUDATA;
             p_ppu->PPUADDR += p_ppu->VRAM_increment;
-			break;
-	}
-	return data;
+        break;
+    }
+    return data;
 }
 
 Byte cpu_to_ppu_write(PPU *p_ppu, Word address, Byte data) {
-	address &= 0x0007;
-	switch (address) {
-		case 0x0: //PPUCTRL *** WRITE only ***
+    address &= 0x0007;
+    switch (address) {
+        case 0x0: //PPUCTRL *** WRITE only ***
             p_ppu->PPUCTRL._ = data;
             p_ppu->VRAM_increment = (p_ppu->PPUCTRL.VRAM_address_inc) ? 32 : 1;
-			break;
+        break;
 
-		case 0x1: //PPUMASK *** WRITE only ***
+        case 0x1: //PPUMASK *** WRITE only ***
             p_ppu->PPUMASK._ = data;
-			break;
+        break;
 
-		case 0x2: //PPUSTATUS *** READ only ***
-			break;
+        case 0x2: //PPUSTATUS *** READ only ***
+        break;
 
-		case 0x3: //OAMADDR *** WRITE only ***
-			break;
+        case 0x3: //OAMADDR *** WRITE only ***
+        break;
 
-		case 0x4: //OAMDATA *** READ / WRITE ***
-			break;
+        case 0x4: //OAMDATA *** READ / WRITE ***
+        break;
 
-		case 0x5: //PPUSCROLL *** WRITE only ***
-			break;
+        case 0x5: //PPUSCROLL *** WRITE only ***
+        break;
 
-		case 0x6: //PPUADDR *** WRITE only ***
+        case 0x6: //PPUADDR *** WRITE only ***
             if (!p_ppu->write_latch) {
                 p_ppu->PPUADDR = (p_ppu->PPUADDR & 0x00FF) | (((Word) data & 0x3F) << 8);
                 p_ppu->write_latch = 1;
@@ -176,24 +176,24 @@ Byte cpu_to_ppu_write(PPU *p_ppu, Word address, Byte data) {
                 p_ppu->PPUADDR = (p_ppu->PPUADDR & 0xFF00) | (Word) data;
                 p_ppu->write_latch = 0;
             }
-			break;
+        break;
 
-		case 0x7: //PPUDATA *** READ / WRITE ***
+        case 0x7: //PPUDATA *** READ / WRITE ***
             p_ppu->PPUDATA = data;
             ppu_write_byte(p_ppu, p_ppu->PPUADDR, data);
             p_ppu->PPUADDR += p_ppu->VRAM_increment;
-			break;
-	}
-	return 0;
+        break;
+    }
+    return 0;
 }
 
 Byte ppu_read_byte(PPU *p_ppu, Word address) {
-	Byte data = 0x00;
-	address &= 0x3FFF;
+    Byte data = 0x00;
+    address &= 0x3FFF;
     // Inside CHR_ROM or pattern tables
     if (address <= 0x1FFF)
-		data = p_ppu->p_Bus->mapper->ppu_read(p_ppu->p_Bus->mapper, address);
-    // Inside Nametable memory
+        data = p_ppu->p_Bus->mapper->ppu_read(p_ppu->p_Bus->mapper, address);
+        // Inside Nametable memory
     else if (0x2000 <= address && address <= 0x2FFF) {
         Byte table_index = (address >> 10) & 0x3;
         address &= 0x3FF;
@@ -214,15 +214,15 @@ Byte ppu_read_byte(PPU *p_ppu, Word address) {
         data = p_ppu->p_Bus->Palettes[address];
     }
 
-	return data;
+    return data;
 }
 
 Byte ppu_write_byte(PPU *p_ppu, Word address, Byte data) {
-	address &= 0x3FFF;
+    address &= 0x3FFF;
     // Inside CHR_ROM or pattern tables
     if (address <= 0x1FFF)
         p_ppu->p_Bus->mapper->ppu_write(p_ppu->p_Bus->mapper, address, data);
-    // Inside Nametable memory
+        // Inside Nametable memory
     else if (0x2000 <= address && address <= 0x2FFF) {
         Byte table_index = (address >> 10) & 0x3;
         address &= 0x3FF;

@@ -65,7 +65,7 @@ int main(int argc, char *argv[]){
         exit_emulator();
         ERROR_EXIT("Unable to initialize emulator, Exited program with status: %d", status);
     };
-    
+
     status = get_graphics_contexts();
     if (status < 0) {
         exit_emulator();
