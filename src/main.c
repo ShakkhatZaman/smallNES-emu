@@ -1,6 +1,7 @@
+#include <stdio.h>
 #include <stdbool.h>
 #include <stdint.h>
-#include <stdio.h>
+#include <stdlib.h>
 #include <sys/time.h>
 
 #define SDL_MAIN_HANDLED
@@ -11,20 +12,21 @@
 #include "include/logging.h"
 
 #ifdef CREATE_LOGS
-    FILE *log_file;
+FILE *log_file;
 #endif /* ifdef CREATE_LOGS */
 
-
+#include "utils.h"
 #include "include/6502.h"
 #include "include/ppu.h"
+#include "include/mapper.h"
 #include "include/cartridge.h"
 
 // #define WINDOW_WIDTH 512
 // #define WINDOW_HEIGHT 480
 
 typedef struct timer {
-	uint64_t start_time;
-	uint64_t duration;
+    uint64_t start_time;
+    uint64_t duration;
 } timer;
 
 CPU cpu;
@@ -37,7 +39,7 @@ uint64_t current_time;
 double FPS;
 char FPS_str[12];
 timer fps_timer = {
-    .duration = 100000,
+    .duration = 200000,
 };
 
 SDL_Window *window;
@@ -46,37 +48,40 @@ SDL_Event event;
 
 static int init_emulator(int argc, Mapper *p_mapper, char *argv[]);
 static int get_graphics_contexts(void);
-static void exit_emulator(int argc);
+static void exit_emulator(void);
 static void manage_events(SDL_Event *p_event);
 static void draw_to_screen(void);
 static void update_fps(void);
 static uint64_t get_time_us(void);
 
 int main(int argc, char *argv[]){
-    int status = get_graphics_contexts();
-	if (status < 0) return -1;
-
-	Mapper mapper;
-    status = init_emulator(argc, &mapper, argv);
-    if (status < 0) {
-        exit_emulator(argc);
-        return -1;
+    Mapper mapper = (Mapper) {
+        .PRG_ROM_banks = 0, .CHR_ROM_banks = 0,
+        .PRG_ROM_p = NULL, .CHR_ROM_p = NULL,
     };
 
-	printf("Starting Emulator...\n");
+    int status = init_emulator(argc, &mapper, argv);
+    if (status < 0) {
+        exit_emulator();
+        ERROR_EXIT("Unable to initialize emulator, Exited program with status: %d", status);
+    };
+    
+    status = get_graphics_contexts();
+    if (status < 0) {
+        exit_emulator();
+        ERROR_EXIT("Unable to get graphics contexts, Exited program with status: %d", status);
+    }
 
-	emulator_running = true;
+    emulator_running = true;
     fps_timer.start_time = get_time_us();
-	while (emulator_running) {
+    while (emulator_running) {
         manage_events(&event);
-		execute_cpu_ppu(&cpu);
+        execute_cpu_ppu(&cpu);
         draw_to_screen();
-	}
+    }
 
-	printf("Exiting Emulator\n %d", cycle_count);
-    exit_emulator(argc);
-
-	return 0;
+    exit_emulator();
+    return status;
 }
 
 static void manage_events(SDL_Event *p_event) {
@@ -92,8 +97,15 @@ static void draw_to_screen(void) {
         // DEBUG
         debug_draw(&ppu);
 
-        SDL_RenderCopy(renderer, (void *)ppu.ppu_draw_texture, NULL, &ppu_screen_rect);
-        SDL_RenderCopy(renderer, (void *)debug_texture, NULL, &debug_rect);
+        if(SDL_RenderCopy(renderer, (void *)ppu.ppu_draw_texture, NULL, &ppu_screen_rect) < 0) {
+            ERROR("Unable to draw to screen\n    SDL error: %s", SDL_GetError());
+            emulator_running = false;
+        }
+
+        if(SDL_RenderCopy(renderer, (void *)debug_texture, NULL, &debug_rect) < 0) {
+            ERROR("Unable to draw to debug screen\n    SDL error: %s", SDL_GetError());
+            emulator_running = false;
+        }
 
         SDL_RenderPresent(renderer);
         ppu.frame_complete = false;
@@ -102,39 +114,32 @@ static void draw_to_screen(void) {
 }
 
 static int init_emulator(int argc, Mapper *p_mapper, char *argv[]) {
-	if (argc < 1){
-		printf("No file to load from\n");
-		return -1;
-	}
+    printf("Starting Emulator...\n");
 
-    SDL_Init(SDL_INIT_EVERYTHING);
+    if (argc < 1){
+        printf("No file to load from\n");
+        return 1;
+    }
+
+    int status = SDL_Init(SDL_INIT_EVERYTHING);
+    if (status < 0)
+        ERROR_RETURN("Unable to initialize SDL (flags: %d)\n    SDL error: %s", SDL_INIT_EVERYTHING, SDL_GetError());
 
     reset_cpu(&cpu, &cpu_bus, &ppu);
     reset_ppu(&ppu, &ppu_bus);
+    load_mapper(&cpu, p_mapper);
 
     //DEBUG
 #ifdef CREATE_LOGS
     GET_LOG_FILE("donkey_kong_log_file.txt");
 #endif
-    
-    int status = load_cartridge(argv[1], p_mapper);
-	if (status < 0) return -1;
-	load_mapper(&cpu, p_mapper);
 
-	init_cpu(&cpu, &cycle_count);
-    status = init_ppu(&ppu, renderer);
-    if (status < 0) return -1;
+    status = load_cartridge(argv[1], p_mapper);
+    if (status < 0)
+        ERROR_RETURN("Unable to load NES cartridge %s", argv[1]);
 
-    // DEBUG
-    debug_texture = SDL_CreateTexture(renderer,
-                                      debug_pixel_format,
-                                      SDL_TEXTUREACCESS_STREAMING,
-                                      256, 240); //DEBUG SCREEN WIDTH AND HEIGHT
+    init_cpu(&cpu, &cycle_count);
 
-    SDL_SetRenderTarget(renderer, debug_texture);
-    SDL_SetRenderDrawColor(renderer, 0, 0, 0, 255);
-    SDL_RenderClear(renderer);
-    SDL_SetRenderTarget(renderer, NULL);
     return 0;
 }
 
@@ -144,16 +149,38 @@ static int get_graphics_contexts(void) {
                               SDL_WINDOWPOS_CENTERED,
                               WINDOW_WIDTH,
                               WINDOW_HEIGHT, 0);
-    if (window == NULL) return -1;
+    if (window == NULL)
+        ERROR_RETURN("Unable to create Window (width: %d, height: %d, flags: %d)", WINDOW_WIDTH, WINDOW_HEIGHT, 0);
 
     renderer = SDL_CreateRenderer(window, -1, 0);
-    if (renderer == NULL) return -1;
+    if (renderer == NULL)
+        ERROR_RETURN("Unable to create Renderer (index: %d, flags: %d)", -1, 0);
+
+    // DEBUG
+    debug_texture = SDL_CreateTexture(renderer,
+                                      debug_pixel_format,
+                                      SDL_TEXTUREACCESS_STREAMING,
+                                      256, 240); //DEBUG SCREEN WIDTH AND HEIGHT
+    if (debug_texture == NULL)
+        ERROR_RETURN("Unable to create Debug texture (width: %d, height: %d)", 256, 240);
+
+    int status = SDL_SetRenderTarget(renderer, debug_texture);
+    status = SDL_SetRenderDrawColor(renderer, 255, 255, 0, 255);
+    status = SDL_RenderClear(renderer);
+    status = SDL_SetRenderTarget(renderer, NULL);
+    if (status < 0)
+        ERROR_RETURN("Unable to clear debug texture\n    SDL error: %s", SDL_GetError());
+
+    status = init_ppu(&ppu, renderer);
+    if (status < 0)
+        ERROR_RETURN("Unable to initialize PPU\n    SDL error: %s", SDL_GetError());
 
     return 0;
 }
 
-static void exit_emulator(int argc) {
-	exit_cpu(&cpu, argc);
+static void exit_emulator(void) {
+    printf("Exiting Emulator\nCycle count: %d\n", cycle_count);
+    exit_cpu(&cpu);
     SDL_DestroyWindow(window);
     SDL_DestroyRenderer(renderer);
     SDL_DestroyTexture(ppu.ppu_draw_texture);
@@ -166,17 +193,17 @@ static void exit_emulator(int argc) {
 }
 
 static void update_fps(void) {
-	if (get_time_us() >= (fps_timer.start_time + fps_timer.duration)) {
+    if (get_time_us() >= (fps_timer.start_time + fps_timer.duration)) {
         FPS = 1e6 / (double) (get_time_us() - current_time);
         snprintf(FPS_str, 12, "%.12f", FPS); 
         SDL_SetWindowTitle(window, FPS_str);
-		fps_timer.start_time = get_time_us();
-	}
+        fps_timer.start_time = get_time_us();
+    }
     current_time = get_time_us();
 }
 
 static uint64_t get_time_us(void) {
-	struct timeval current_timeval;
-	gettimeofday(&current_timeval, NULL);
-	return (uint64_t) current_timeval.tv_sec * (int) 1e6 + current_timeval.tv_usec;
+    struct timeval current_timeval;
+    gettimeofday(&current_timeval, NULL);
+    return (uint64_t) current_timeval.tv_sec * (int) 1e6 + current_timeval.tv_usec;
 }

@@ -4,6 +4,7 @@
 #include <stdlib.h>
 #include <string.h>
 
+#include "../utils.h"
 #include "mapper.h"
 #include "types.h"
 #include "ppu.h"
@@ -56,16 +57,16 @@ static void ppu_draw(PPU *ppu) {
 
     // DEBUG
     Byte Plane_num = ppu_read_byte(ppu, (((Word) ppu->scanlines / 8) << 5) | ((Word) ppu->dots / 8) | 0x2000);
+    // the value 0 passed as "table index" will make it draw the first pattern table
     Pattern_row pattern = get_pattern_row(ppu, 0, Plane_num, (Byte) (ppu->scanlines % 8));
     draw_pixel_row(ppu, pattern, ppu->screen_buffer, current_palette, ppu->dots, ppu->scanlines);
     ppu->dots += 7;
-
 }
 
 void reset_ppu(PPU *ppu, PPU_Bus *ppu_bus) {
     *ppu = (PPU) {
-        .PPUCTRL =  0, .PPUMASK =  0,   // ALL registers initialized with 0
-        .PPUSTATUS =  0, .PPUADDR = 0,
+        .PPUCTRL._ =  0, .PPUMASK._ =  0,   // ALL registers initialized with 0
+        .PPUSTATUS._ =  0, .PPUADDR = 0,
         .PPUDATA = 0,
         .p_Bus = ppu_bus,
         .write_latch = 0,               // Write latch to 0
@@ -87,15 +88,19 @@ int init_ppu(PPU *ppu, SDL_Renderer *renderer) {
     SDL_Texture *texture = SDL_CreateTexture(renderer,
                                              pixel_format,
                                              SDL_TEXTUREACCESS_STREAMING,
-                                             //DEBUG
                                              NES_WIDTH, NES_HEIGHT);
-
-    if (texture == NULL) return -1;
+    if (texture == NULL)
+        ERROR_RETURN("Unable to create NES screen texture\n    SDL error: %s", SDL_GetError());
     ppu->ppu_draw_texture = texture;
-    SDL_SetRenderTarget(renderer, ppu->ppu_draw_texture);
-    SDL_SetRenderDrawColor(renderer, 255, 255, 0, 255);
-    SDL_RenderClear(renderer);
-    SDL_SetRenderTarget(renderer, NULL);
+
+    int status = SDL_SetRenderTarget(renderer, ppu->ppu_draw_texture);
+    status = SDL_SetRenderDrawColor(renderer, 255, 255, 0, 255);
+    status = SDL_RenderClear(renderer);
+    status = SDL_SetRenderTarget(renderer, NULL);
+
+    if (status < 0)
+        ERROR_RETURN("Unable to clear NES screen texture\n    SDL error: %s", SDL_GetError());
+
     return 0;
 }
 
@@ -142,12 +147,12 @@ Byte cpu_to_ppu_write(PPU *p_ppu, Word address, Byte data) {
 	address &= 0x0007;
 	switch (address) {
 		case 0x0: //PPUCTRL *** WRITE only ***
-            p_ppu->PPUCTRL = (PPUCTRL_reg) data;
+            p_ppu->PPUCTRL._ = data;
             p_ppu->VRAM_increment = (p_ppu->PPUCTRL.VRAM_address_inc) ? 32 : 1;
 			break;
 
 		case 0x1: //PPUMASK *** WRITE only ***
-            p_ppu->PPUMASK = (PPUMASK_reg) data;
+            p_ppu->PPUMASK._ = data;
 			break;
 
 		case 0x2: //PPUSTATUS *** READ only ***

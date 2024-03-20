@@ -13,7 +13,7 @@
 int *p_total_cycles;
 
 int cpu_clock(CPU *cpu) { //main function to process status of cpu
-	*p_total_cycles += 1; // 1 clock has passed
+    *p_total_cycles += 1; // 1 clock has passed
     ppu_clock(cpu->p_ppu);
     ppu_clock(cpu->p_ppu);
     ppu_clock(cpu->p_ppu);
@@ -21,13 +21,13 @@ int cpu_clock(CPU *cpu) { //main function to process status of cpu
         cpu->p_ppu->create_nmi = false;
         cpu_nmi(cpu);
     }
-    
-//DEBUG
+
+    //DEBUG
 #ifdef CREATE_LOGS
     LOG_MESSAGE("vert_blank: %d, PPUADDR: %x\n", cpu->p_ppu->PPUSTATUS.Verticle_blank, cpu->p_ppu->PPUADDR);
 #endif
 
-	return 0;
+    return 0;
 }
 
 void reset_cpu(CPU *cpu, CPU_Bus *cpuBus, PPU *p_ppu) {
@@ -47,22 +47,22 @@ void reset_cpu(CPU *cpu, CPU_Bus *cpuBus, PPU *p_ppu) {
 }
 
 void init_cpu(CPU *p_cpu, int *cycles) {
-	printf("Initializing CPU...\n");
-	p_total_cycles = cycles;
-	p_cpu->PC = fetch_word(p_cpu);
+    printf("Initializing CPU...\n");
+    p_total_cycles = cycles;
+    p_cpu->PC = fetch_word(p_cpu);
 }
 
 void load_mapper(CPU *cpu, Mapper *mapper) {
-	cpu->p_Bus->mapper = mapper;
-	cpu->p_ppu->p_Bus->mapper = mapper;
+    cpu->p_Bus->mapper = mapper;
+    cpu->p_ppu->p_Bus->mapper = mapper;
 }
 
 void execute_cpu_ppu(CPU *p_cpu) {
-	Byte op_code = fetch_byte(p_cpu);
-	cpu_clock(p_cpu);
-	Ins ins_struct = ins_table[op_code];
-	ins_struct.address_mode(p_cpu);
-	ins_struct.operation(p_cpu);
+    Byte op_code = fetch_byte(p_cpu);
+    cpu_clock(p_cpu);
+    Ins ins_struct = ins_table[op_code];
+    ins_struct.address_mode(p_cpu);
+    ins_struct.operation(p_cpu);
 
     //DEBUG
 #ifdef CREATE_LOGS 
@@ -70,9 +70,7 @@ void execute_cpu_ppu(CPU *p_cpu) {
 #endif
 }
 
-void exit_cpu(CPU *cpu, int argc) {
-	if (argc > 1)
-		free_cartridge(cpu->p_Bus->mapper);
-	return;
+void exit_cpu(CPU *cpu) {
+    free_cartridge(cpu->p_Bus->mapper);
 }
 
