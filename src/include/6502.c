@@ -71,6 +71,7 @@ void execute_cpu_ppu(CPU *p_cpu) {
 }
 
 void exit_cpu(CPU *cpu) {
-    free_cartridge(cpu->p_Bus->mapper);
+    if (cpu->p_Bus != NULL)
+        free_cartridge(cpu->p_Bus->mapper);
 }
 

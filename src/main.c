@@ -29,8 +29,8 @@ typedef struct timer {
     uint64_t duration;
 } timer;
 
-CPU cpu;
-PPU ppu;
+CPU cpu = {.p_Bus = NULL};
+PPU ppu = {.p_Bus = NULL};
 CPU_Bus cpu_bus;
 PPU_Bus ppu_bus;
 int cycle_count = 0;
@@ -61,9 +61,10 @@ int main(int argc, char *argv[]){
     };
 
     int status = init_emulator(argc, &mapper, argv);
-    if (status < 0) {
+    if (status != 0) {
         exit_emulator();
-        ERROR_EXIT("Unable to initialize emulator, Exited program with status: %d", status);
+        if (status < 0) ERROR_EXIT("Unable to initialize emulator, Exited program with status: %d", status);
+        return status;
     };
 
     status = get_graphics_contexts();
@@ -116,7 +117,7 @@ static void draw_to_screen(void) {
 static int init_emulator(int argc, Mapper *p_mapper, char *argv[]) {
     printf("Starting Emulator...\n");
 
-    if (argc < 1){
+    if (argc < 2){
         printf("No file to load from\n");
         return 1;
     }
@@ -195,7 +196,7 @@ static void exit_emulator(void) {
 static void update_fps(void) {
     if (get_time_us() >= (fps_timer.start_time + fps_timer.duration)) {
         FPS = 1e6 / (double) (get_time_us() - current_time);
-        snprintf(FPS_str, 12, "%.12f", FPS); 
+        snprintf(FPS_str, 11, "%.12f", FPS); 
         SDL_SetWindowTitle(window, FPS_str);
         fps_timer.start_time = get_time_us();
     }

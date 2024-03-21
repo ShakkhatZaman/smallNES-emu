@@ -76,7 +76,7 @@ void reset_ppu(PPU *ppu, PPU_Bus *ppu_bus) {
         .create_nmi = false
     };
     //DEBUG 
-    memset(ppu->screen_buffer, 0, NES_WIDTH * NES_HEIGHT * sizeof(uint32_t));
+    memset(ppu->screen_buffer, 0, NES_WIDTH * NES_HEIGHT * sizeof(*ppu->screen_buffer));
     memset(ppu->p_Bus->Palettes, 0, 0x1F);
     for (int i = 0; i < 4; i++)
         memset(ppu->p_Bus->Nametable[i], 0, 1024);
