@@ -9,13 +9,11 @@
 #include "types.h"
 #include "ppu.h"
 #include "ppu_registers.h"
-// DEBUG
-#include "debug.h"
 
 static void ppu_draw(PPU *ppu);
-//DEBUG
-// static Pattern_row get_pattern_row(PPU *ppu, Byte table_index, Byte tile_num, Byte tile_y);
-// static uint32_t get_pixel_color(PPU *ppu, Byte palette_num, Byte pixel);
+static Pattern_row get_pattern_row(PPU *ppu, Byte table_index, Byte plane_num, Byte plane_y);
+static uint32_t get_pixel_color(PPU *ppu, Byte palette_num, Byte pixel);
+static void draw_pixel_row(PPU *ppu, Pattern_row pattern_row, uint32_t *buffer, Byte palette_num, int row_x, int y);
 
 void ppu_clock(PPU *ppu) {
     if (ppu->dots >= DOTS) {
@@ -59,7 +57,7 @@ static void ppu_draw(PPU *ppu) {
     Byte Plane_num = ppu_read_byte(ppu, (((Word) ppu->scanlines / 8) << 5) | ((Word) ppu->dots / 8) | 0x2000);
     // the value 0 passed as "table index" will make it draw the first pattern table
     Pattern_row pattern = get_pattern_row(ppu, 0, Plane_num, (Byte) (ppu->scanlines % 8));
-    draw_pixel_row(ppu, pattern, ppu->screen_buffer, current_palette, ppu->dots, ppu->scanlines);
+    draw_pixel_row(ppu, pattern, ppu->screen_buffer, 0, ppu->dots, ppu->scanlines);
     ppu->dots += 7;
 }
 
@@ -75,7 +73,7 @@ void reset_ppu(PPU *ppu, PPU_Bus *ppu_bus) {
         .frame_complete = false,        // Frame complete to false
         .create_nmi = false
     };
-    //DEBUG 
+
     memset(ppu->screen_buffer, 0, NES_WIDTH * NES_HEIGHT * sizeof(*ppu->screen_buffer));
     memset(ppu->p_Bus->Palettes, 0, 0x1F);
     for (int i = 0; i < 4; i++)
@@ -246,9 +244,7 @@ Byte ppu_write_byte(PPU *p_ppu, Word address, Byte data) {
     return 0;
 }
 
-// DEBUG
-// static Pattern_row get_pattern_row(PPU *ppu, Byte table_index, Byte tile_num, Byte tile_y) {
-Pattern_row get_pattern_row(PPU *ppu, Byte table_index, Byte plane_num, Byte plane_y) {
+static Pattern_row get_pattern_row(PPU *ppu, Byte table_index, Byte plane_num, Byte plane_y) {
     Word address = (table_index) ? 0x1000 : 0x0000;
     address |= ((Word) plane_num) << 4;
     address |= (plane_y < 8) ? plane_y : 0;
@@ -258,14 +254,12 @@ Pattern_row get_pattern_row(PPU *ppu, Byte table_index, Byte plane_num, Byte pla
     };
 }
 
-//DEBUG
-// static uint32_t get_pixel_color(PPU *ppu, Byte palette_num, Byte pixel) {
-uint32_t get_pixel_color(PPU *ppu, Byte palette_num, Byte pixel) {
+static uint32_t get_pixel_color(PPU *ppu, Byte palette_num, Byte pixel) {
     Byte pixel_index = ppu_read_byte(ppu, (palette_num << 2) + pixel + 0x3F00);
     return NES_Palette[pixel_index & 0x3F];
 }
 
-void draw_pixel_row(PPU *ppu, Pattern_row pattern_row, uint32_t *buffer, Byte palette_num, int row_x, int y) {
+static void draw_pixel_row(PPU *ppu, Pattern_row pattern_row, uint32_t *buffer, Byte palette_num, int row_x, int y) {
     for (int i = 7; i > -1; i--) {
         Byte low_bit = pattern_row.LS_Byte & 0x1;
         Byte high_bit = (pattern_row.MS_Byte & 0x1) << 1;

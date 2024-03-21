@@ -1,5 +1,5 @@
-#ifndef CPU_TYPES_H
-#define CPU_TYPES_H
+#ifndef CPU_6502_H
+#define CPU_6502_H
 
 #include "types.h"
 #include "ppu.h"
@@ -55,4 +55,4 @@ void load_mapper(CPU * cpu, Mapper * mapper);
 
 void exit_cpu(CPU *cpu);
 
-#endif //CPU_TYPES_H
+#endif //CPU_6502_H

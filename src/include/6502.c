@@ -5,9 +5,6 @@
 #include "6502.h"
 #include "instructions.h"
 #include "cartridge.h"
-
-// DEBUG
-#include "logging.h"
 #include "ppu.h"
 
 int *p_total_cycles;
@@ -21,12 +18,6 @@ int cpu_clock(CPU *cpu) { //main function to process status of cpu
         cpu->p_ppu->create_nmi = false;
         cpu_nmi(cpu);
     }
-
-    //DEBUG
-#ifdef CREATE_LOGS
-    LOG_MESSAGE("vert_blank: %d, PPUADDR: %x\n", cpu->p_ppu->PPUSTATUS.Verticle_blank, cpu->p_ppu->PPUADDR);
-#endif
-
     return 0;
 }
 
@@ -63,11 +54,6 @@ void execute_cpu_ppu(CPU *p_cpu) {
     Ins ins_struct = ins_table[op_code];
     ins_struct.address_mode(p_cpu);
     ins_struct.operation(p_cpu);
-
-    //DEBUG
-#ifdef CREATE_LOGS 
-    LOG_MESSAGE("cycles: %d, ins : %x, PC : %x, A : %d, X : %d, Y : %d, tmp_addr: %x\n", *p_total_cycles, op_code, p_cpu->PC, p_cpu->A, p_cpu->X, p_cpu->Y, p_cpu->temp_word);
-#endif
 }
 
 void exit_cpu(CPU *cpu) {

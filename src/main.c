@@ -7,22 +7,14 @@
 #define SDL_MAIN_HANDLED
 #include <SDL2/SDL.h>
 
-//DEBUG
-#include "include/debug.h"
-#include "include/logging.h"
-
-#ifdef CREATE_LOGS
-FILE *log_file;
-#endif /* ifdef CREATE_LOGS */
-
 #include "utils.h"
 #include "include/6502.h"
 #include "include/ppu.h"
 #include "include/mapper.h"
 #include "include/cartridge.h"
 
-// #define WINDOW_WIDTH 512
-// #define WINDOW_HEIGHT 480
+#define WINDOW_WIDTH 512
+#define WINDOW_HEIGHT 480
 
 typedef struct timer {
     uint64_t start_time;
@@ -88,26 +80,14 @@ int main(int argc, char *argv[]){
 static void manage_events(SDL_Event *p_event) {
     SDL_PollEvent(p_event);
     if (event.type == SDL_QUIT) emulator_running = false;
-    if (event.type == SDL_KEYDOWN && event.key.keysym.sym == SDLK_SPACE) current_palette = (current_palette == 7) ? 0 : current_palette + 1;
 }
 
 static void draw_to_screen(void) {
     if (ppu.frame_complete) {
-        // SDL_RenderCopy(renderer, (void *)ppu.ppu_draw_texture, NULL, NULL);
-        //
-        // DEBUG
-        debug_draw(&ppu);
-
-        if(SDL_RenderCopy(renderer, (void *)ppu.ppu_draw_texture, NULL, &ppu_screen_rect) < 0) {
+        if(SDL_RenderCopy(renderer, (void *)ppu.ppu_draw_texture, NULL, NULL) < 0) {
             ERROR("Unable to draw to screen\n    SDL error: %s", SDL_GetError());
             emulator_running = false;
         }
-
-        if(SDL_RenderCopy(renderer, (void *)debug_texture, NULL, &debug_rect) < 0) {
-            ERROR("Unable to draw to debug screen\n    SDL error: %s", SDL_GetError());
-            emulator_running = false;
-        }
-
         SDL_RenderPresent(renderer);
         ppu.frame_complete = false;
         update_fps();
@@ -130,11 +110,6 @@ static int init_emulator(int argc, Mapper *p_mapper, char *argv[]) {
     reset_ppu(&ppu, &ppu_bus);
     load_mapper(&cpu, p_mapper);
 
-    //DEBUG
-#ifdef CREATE_LOGS
-    GET_LOG_FILE("donkey_kong_log_file.txt");
-#endif
-
     status = load_cartridge(argv[1], p_mapper);
     if (status < 0)
         ERROR_RETURN("Unable to load NES cartridge %s", argv[1]);
@@ -156,23 +131,8 @@ static int get_graphics_contexts(void) {
     renderer = SDL_CreateRenderer(window, -1, 0);
     if (renderer == NULL)
         ERROR_RETURN("Unable to create Renderer (index: %d, flags: %d)", -1, 0);
-
-    // DEBUG
-    debug_texture = SDL_CreateTexture(renderer,
-                                      debug_pixel_format,
-                                      SDL_TEXTUREACCESS_STREAMING,
-                                      256, 240); //DEBUG SCREEN WIDTH AND HEIGHT
-    if (debug_texture == NULL)
-        ERROR_RETURN("Unable to create Debug texture (width: %d, height: %d)", 256, 240);
-
-    int status = SDL_SetRenderTarget(renderer, debug_texture);
-    status = SDL_SetRenderDrawColor(renderer, 255, 255, 0, 255);
-    status = SDL_RenderClear(renderer);
-    status = SDL_SetRenderTarget(renderer, NULL);
-    if (status < 0)
-        ERROR_RETURN("Unable to clear debug texture\n    SDL error: %s", SDL_GetError());
-
-    status = init_ppu(&ppu, renderer);
+    
+    int status = init_ppu(&ppu, renderer);
     if (status < 0)
         ERROR_RETURN("Unable to initialize PPU\n    SDL error: %s", SDL_GetError());
 
@@ -186,11 +146,6 @@ static void exit_emulator(void) {
     SDL_DestroyRenderer(renderer);
     SDL_DestroyTexture(ppu.ppu_draw_texture);
     SDL_Quit();
-
-    //DEBUG
-#ifdef CREATE_LOGS
-    CLOSE_LOG_FILE();
-#endif
 }
 
 static void update_fps(void) {

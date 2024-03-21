@@ -39,8 +39,6 @@ typedef struct {
     Byte VRAM_increment;
     int dots;
     int scanlines;
-    //DEBUG
-    // uint32_t screen_buffer[DOTS * SCANLINES];
     uint32_t screen_buffer[NES_WIDTH * NES_HEIGHT];
 
     SDL_Texture *ppu_draw_texture;
@@ -66,10 +64,5 @@ Byte ppu_write_byte(PPU *p_ppu, Word address, Byte data);
 Byte cpu_to_ppu_read(PPU *p_ppu, Word address);
 
 Byte cpu_to_ppu_write(PPU *p_ppu, Word address, Byte data);
-
-// DEBUG
-Pattern_row get_pattern_row(PPU *ppu, Byte table_index, Byte plane_num, Byte plane_y);
-uint32_t get_pixel_color(PPU *ppu, Byte palette_num, Byte pixel);
-void draw_pixel_row(PPU *ppu, Pattern_row pattern_row, uint32_t *buffer, Byte palette_num, int row_x, int y);
 
 #endif //PPU_H

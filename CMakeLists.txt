@@ -9,7 +9,6 @@ set(SOURCE_FILES
     src/include/mapper.c
     src/include/ppu.c
     src/include/mappers/nrom.c
-    src/include/debug.c
 )
 
 set(CMAKE_BUILD_TYPE Debug)
