@@ -9,18 +9,23 @@
 #include "ppu_registers.h"
 #include "types.h"
 
+#define NES_WIDTH 256
+#define NES_HEIGHT 240
+
 #define COLORS_PER_PALETTE 4
+
 #define DOTS 341
 #define SCANLINES 261
 
+
 typedef struct {
-	Byte Nametable[4][1024];// 4KB for nametables ->		$2000 - $2FFF
-	Byte Palettes[32];		// 32B for palettes ->			$3F00 - $3FFF
-	Mapper *mapper;
+    Byte Nametable[4][1024];// 4KB for nametables ->		$2000 - $2FFF
+    Byte Palettes[32];		// 32B for palettes ->			$3F00 - $3FFF
+    Mapper *mapper;
 } PPU_Bus;
 
 typedef struct {
-	Byte PPU_registers[8];
+    Byte PPU_registers[8];
     // Registers
     PPUCTRL_reg PPUCTRL;
     PPUMASK_reg PPUMASK;
@@ -28,15 +33,17 @@ typedef struct {
     Word PPUADDR;
     Byte PPUDATA;
     // Bus
-	PPU_Bus *p_Bus;
+    PPU_Bus *p_Bus;
     // Helper members
     Byte write_latch;
     Byte VRAM_increment;
     int dots;
     int scanlines;
-    uint32_t screen_buffer[DOTS * SCANLINES];
+    uint32_t screen_buffer[NES_WIDTH * NES_HEIGHT];
+
     SDL_Texture *ppu_draw_texture;
     bool frame_complete;
+    bool create_nmi;
 } PPU;
 
 typedef struct {

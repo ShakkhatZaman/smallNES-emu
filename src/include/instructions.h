@@ -8,8 +8,8 @@
 
 /*Instruction struct*/
 typedef struct{
-	Byte (*address_mode)(CPU *);
-	Byte (*operation)(CPU *);
+    Byte (*address_mode)(CPU *);
+    Byte (*operation)(CPU *);
 } Ins;
 
 extern const Ins ins_table[256];

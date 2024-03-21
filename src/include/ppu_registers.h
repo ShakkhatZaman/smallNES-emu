@@ -5,7 +5,8 @@
 
 typedef union {
     struct {
-        Byte Base_nametable_address : 2;
+        Byte Nametable_address_x : 1;
+        Byte Nametable_address_y : 1;
         Byte VRAM_address_inc : 1;
         Byte Sprite_pattern_address : 1;
         Byte Background_pattern_address : 1;

@@ -2,14 +2,13 @@ cmake_minimum_required(VERSION 3.14)
 project(emulator)
 
 set(SOURCE_FILES 
-	src/main.c 
-	src/include/6502.c
-	src/include/cartridge.c
-	src/include/instructions.c
-	src/include/mapper.c
-	src/include/ppu.c
-	src/include/mappers/nrom.c
-    src/include/debug.c
+    src/main.c 
+    src/include/6502.c
+    src/include/cartridge.c
+    src/include/instructions.c
+    src/include/mapper.c
+    src/include/ppu.c
+    src/include/mappers/nrom.c
 )
 
 set(CMAKE_BUILD_TYPE Debug)
@@ -27,7 +26,7 @@ find_package(SDL2 REQUIRED CONFIG REQUIRED COMPONENTS SDL2)
 #include_directories(${SDL2_INCLUDE_DIRS})
 
 #[[ if(TARGET SDL2::SDL2main)
-    target_link_libraries(${PROJECT_NAME} PRIVATE SDL2::SDL2main)
+target_link_libraries(${PROJECT_NAME} PRIVATE SDL2::SDL2main)
 endif() ]]
 
 target_link_libraries(${PROJECT_NAME} PRIVATE SDL2::SDL2)
