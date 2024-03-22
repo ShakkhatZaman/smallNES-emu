@@ -7,11 +7,11 @@
 
 #define NOT_ENOUGH_CYCLES 0
 
-#define MEM_SIZE 0x10000 // 65536 B = 1024 * 64 B = 64 kB 
+#define MEM_SIZE 0x10000        // 65536 B = 1024 * 64 B = 64 kB 
 
 typedef struct {
-    Byte RAM[2048]; 			// 2KB of RAM ->		$0000 - $07FF
-    Byte APU_registers[18]; 	// APU registers ->		$4000 - $4017
+    Byte RAM[2048];             // 2KB of RAM ->		$0000 - $07FF
+    Byte APU_registers[18];     // APU registers ->		$4000 - $4017
     Mapper *mapper;
 } CPU_Bus;
 

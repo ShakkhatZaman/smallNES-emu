@@ -14,6 +14,7 @@ static void ppu_draw(PPU *ppu);
 static Pattern_row get_pattern_row(PPU *ppu, Byte table_index, Byte plane_num, Byte plane_y);
 static uint32_t get_pixel_color(PPU *ppu, Byte palette_num, Byte pixel);
 static void draw_pixel_row(PPU *ppu, Pattern_row pattern_row, uint32_t *buffer, Byte palette_num, int row_x, int y);
+static void update_vram_address(PPU *ppu);
 
 void ppu_clock(PPU *ppu) {
     if (ppu->dots >= DOTS) {
@@ -29,14 +30,17 @@ void ppu_clock(PPU *ppu) {
     if (ppu->dots > -1 && ppu->dots < NES_WIDTH && ppu->scanlines > -1 && ppu->scanlines < NES_HEIGHT) 
         ppu_draw(ppu);
 
-    ppu->dots++;
+    if (ppu->PPUMASK.Render_background || ppu->PPUMASK.Render_sprites) 
+        update_vram_address(ppu);
+
+    if (ppu->scanlines == -1 && ppu->dots == 1) {
+        ppu->PPUSTATUS.Verticle_blank = 0;
+    }
     if (ppu->scanlines == 241 && ppu->dots == 1) {
         ppu->PPUSTATUS.Verticle_blank = 1;
         ppu->create_nmi = true;
     }
-    if (ppu->scanlines == -1 && ppu->dots == 1) {
-        ppu->PPUSTATUS.Verticle_blank = 0;
-    }
+    ppu->dots++;
 }
 
 uint32_t NES_Palette[64] = {
@@ -54,17 +58,23 @@ static void ppu_draw(PPU *ppu) {
     // TODO fill the function
 
     // DEBUG
-    Byte Plane_num = ppu_read_byte(ppu, (((Word) ppu->scanlines / 8) << 5) | ((Word) ppu->dots / 8) | 0x2000);
-    // the value 0 passed as "table index" will make it draw the first pattern table
-    Pattern_row pattern = get_pattern_row(ppu, 0, Plane_num, (Byte) (ppu->scanlines % 8));
-    draw_pixel_row(ppu, pattern, ppu->screen_buffer, 0, ppu->dots, ppu->scanlines);
-    ppu->dots += 7;
+    // if (ppu->dots && ((ppu->dots/* + ppu->fine_x*/) % 8)) return;
+    if (ppu->dots % 8) return;
+    // if (ppu->PPUMASK.Render_background) {
+        Byte Plane_num = ppu_read_byte(ppu, (((Word) ppu->scanlines / 8) << 5) | ((Word) ppu->dots / 8) | 0x2000);
+        // Byte Plane_num = ppu_read_byte(ppu, (ppu->current_address._ & 0xFFF) | 0x2000);
+        // the value 0 passed as "table index" will make it draw the first pattern table
+        Pattern_row pattern = get_pattern_row(ppu, ppu->PPUCTRL.Background_pattern_address, Plane_num, (Byte) (ppu->scanlines % 8));
+        draw_pixel_row(ppu, pattern, ppu->screen_buffer, 0, ppu->dots, ppu->scanlines);
+        // ppu->dots += 7;
+    // }
 }
 
 void reset_ppu(PPU *ppu, PPU_Bus *ppu_bus) {
     *ppu = (PPU) {
         .PPUCTRL._ =  0, .PPUMASK._ =  0,   // ALL registers initialized with 0
-        .PPUSTATUS._ =  0, .PPUADDR = 0,
+        .PPUSTATUS._ =  0,
+        .current_address._ = 0, .temp_address._ = 0, .fine_x = 0,
         .PPUDATA = 0,
         .p_Bus = ppu_bus,
         .write_latch = 0,               // Write latch to 0
@@ -133,9 +143,9 @@ Byte cpu_to_ppu_read(PPU *p_ppu, Word address) {
 
         case 0x7: //PPUDATA *** READ / WRITE ***
             data = (Byte) p_ppu->PPUDATA;
-            p_ppu->PPUDATA = ppu_read_byte(p_ppu, p_ppu->PPUADDR);
-            if (p_ppu->PPUADDR >= 0x3F00) data = p_ppu->PPUDATA;
-            p_ppu->PPUADDR += p_ppu->VRAM_increment;
+            p_ppu->PPUDATA = ppu_read_byte(p_ppu, p_ppu->current_address._);
+            if (p_ppu->current_address._ >= 0x3F00) data = p_ppu->PPUDATA;
+            p_ppu->current_address._ += p_ppu->VRAM_increment;
         break;
     }
     return data;
@@ -147,6 +157,8 @@ Byte cpu_to_ppu_write(PPU *p_ppu, Word address, Byte data) {
         case 0x0: //PPUCTRL *** WRITE only ***
             p_ppu->PPUCTRL._ = data;
             p_ppu->VRAM_increment = (p_ppu->PPUCTRL.VRAM_address_inc) ? 32 : 1;
+            p_ppu->temp_address.nametable_select_x = p_ppu->PPUCTRL.Nametable_select_x;
+            p_ppu->temp_address.nametable_select_y = p_ppu->PPUCTRL.Nametable_select_y;
         break;
 
         case 0x1: //PPUMASK *** WRITE only ***
@@ -163,23 +175,34 @@ Byte cpu_to_ppu_write(PPU *p_ppu, Word address, Byte data) {
         break;
 
         case 0x5: //PPUSCROLL *** WRITE only ***
+            if (!p_ppu->write_latch) {
+                p_ppu->temp_address.coarse_x = data >> 3;
+                p_ppu->fine_x = data & 0x7;
+                p_ppu->write_latch = 1;
+            }
+            else {
+                p_ppu->temp_address.coarse_y = data >> 3;
+                p_ppu->temp_address.fine_y = data & 0x7;
+                p_ppu->write_latch = 0;
+            }
         break;
 
         case 0x6: //PPUADDR *** WRITE only ***
             if (!p_ppu->write_latch) {
-                p_ppu->PPUADDR = (p_ppu->PPUADDR & 0x00FF) | (((Word) data & 0x3F) << 8);
+                p_ppu->temp_address._ = (p_ppu->temp_address._ & 0x00FF) | (((Word) data & 0x3F) << 8);
                 p_ppu->write_latch = 1;
             }
             else {
-                p_ppu->PPUADDR = (p_ppu->PPUADDR & 0xFF00) | (Word) data;
+                p_ppu->temp_address._ = (p_ppu->temp_address._ & 0xFF00) | (Word) data;
+                p_ppu->current_address._ = p_ppu->temp_address._;
                 p_ppu->write_latch = 0;
             }
         break;
 
         case 0x7: //PPUDATA *** READ / WRITE ***
             p_ppu->PPUDATA = data;
-            ppu_write_byte(p_ppu, p_ppu->PPUADDR, data);
-            p_ppu->PPUADDR += p_ppu->VRAM_increment;
+            ppu_write_byte(p_ppu, p_ppu->current_address._, data);
+            p_ppu->current_address._ += p_ppu->VRAM_increment;
         break;
     }
     return 0;
@@ -264,8 +287,50 @@ static void draw_pixel_row(PPU *ppu, Pattern_row pattern_row, uint32_t *buffer, 
         Byte low_bit = pattern_row.LS_Byte & 0x1;
         Byte high_bit = (pattern_row.MS_Byte & 0x1) << 1;
         uint32_t pixel_color = get_pixel_color(ppu, palette_num, high_bit | low_bit);
-        buffer[(y * NES_WIDTH) + row_x + i] = pixel_color;
+        if ((row_x + i) > -1 && (row_x + i) < 256)
+            buffer[(y * NES_WIDTH) + row_x + i] = pixel_color;
         pattern_row.LS_Byte >>= 1;
         pattern_row.MS_Byte >>= 1;
+    }
+}
+
+static void update_vram_address(PPU *ppu) {
+    if (ppu->dots == 256) {
+        if (ppu->current_address.fine_y == 7) {
+            if (ppu->current_address.coarse_y == 29) {
+                ppu->current_address.coarse_y = 0;
+                ppu->current_address.nametable_select_y = ~ppu->current_address.nametable_select_y;
+            }
+            else if (ppu->current_address.coarse_y == 31) {
+                ppu->current_address.coarse_y = 0;
+            }
+            else {
+                ppu->current_address.coarse_y++;
+            }
+            ppu->current_address.fine_y = 0;
+        }
+        else {
+            ppu->current_address.fine_y++;
+        }
+    }
+    if (ppu->dots == 257) {
+        ppu->current_address.nametable_select_x = ppu->temp_address.nametable_select_x;
+        ppu->current_address.coarse_x = ppu->temp_address.coarse_x;
+    }
+    if (ppu->dots > 279 && ppu->dots < 305) {
+        ppu->current_address.fine_y = ppu->temp_address.fine_y;
+        ppu->current_address.nametable_select_y = ppu->temp_address.nametable_select_y;
+        ppu->current_address.coarse_y = ppu->temp_address.coarse_y;
+    }
+    if (ppu->dots > 327 || ppu->dots < 257) {
+        if (ppu->dots && !(ppu->dots % 8)) {
+            if (ppu->current_address.coarse_x == 31) {
+                ppu->current_address.coarse_x = 0;
+                ppu->current_address.nametable_select_x = ~ppu->current_address.nametable_select_x;
+            }
+            else {
+                ppu->current_address.coarse_x++;
+            }
+        }
     }
 }

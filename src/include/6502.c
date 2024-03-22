@@ -9,8 +9,8 @@
 
 int *p_total_cycles;
 
-int cpu_clock(CPU *cpu) { //main function to process status of cpu
-    *p_total_cycles += 1; // 1 clock has passed
+int cpu_clock(CPU *cpu) {
+    *p_total_cycles += 1;
     ppu_clock(cpu->p_ppu);
     ppu_clock(cpu->p_ppu);
     ppu_clock(cpu->p_ppu);
