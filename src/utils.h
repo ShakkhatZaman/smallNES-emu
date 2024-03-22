@@ -5,7 +5,7 @@
 #include <stdio.h>
 
 #define ERROR(format, ...) {                        \
-    fprintf(stderr, "***\033[0;31mERROR\033[0m: ");                     \
+    fprintf(stderr, "***\033[0;31mERROR\033[0m: "); \
     fprintf(stderr, format, __VA_ARGS__);           \
     fprintf(stderr, "\n");                          \
 }

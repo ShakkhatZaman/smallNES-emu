@@ -19,7 +19,7 @@
 
 
 typedef struct {
-    Byte Nametable[4][1024];// 4KB for nametables ->		$2000 - $2FFF
+    Byte Nametable[4][1024];// 4KB for 4 nametables ->         $2000 - $2FFF
     Byte Palettes[32];		// 32B for palettes ->			$3F00 - $3FFF
     Mapper *mapper;
 } PPU_Bus;
@@ -30,17 +30,17 @@ typedef struct {
     PPUCTRL_reg PPUCTRL;
     PPUMASK_reg PPUMASK;
     PPUSTATUS_reg PPUSTATUS;
-    Word PPUADDR;
+    VRAM_ADDR_reg current_address;
+    VRAM_ADDR_reg temp_address;
+    Byte fine_x;
     Byte PPUDATA;
+    Byte write_latch;
     // Bus
     PPU_Bus *p_Bus;
     // Helper members
-    Byte write_latch;
     Byte VRAM_increment;
     int dots;
     int scanlines;
-    //DEBUG
-    // uint32_t screen_buffer[DOTS * SCANLINES];
     uint32_t screen_buffer[NES_WIDTH * NES_HEIGHT];
 
     SDL_Texture *ppu_draw_texture;

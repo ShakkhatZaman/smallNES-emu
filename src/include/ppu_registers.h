@@ -1,14 +1,12 @@
 #ifndef PPU_REGISTERS_H
 #define PPU_REGISTERS_H
 
-#include <stdint.h>
-
 #include "types.h"
 
 typedef union {
     struct {
-        Byte Nametable_address_x : 1;
-        Byte Nametable_address_y : 1;
+        Byte Nametable_select_x : 1;
+        Byte Nametable_select_y : 1;
         Byte VRAM_address_inc : 1;
         Byte Sprite_pattern_address : 1;
         Byte Background_pattern_address : 1;
@@ -22,10 +20,10 @@ typedef union {
 typedef union {
     struct {
         Byte Grayscale : 1;
-        Byte Show_background_left_8 : 1;
-        Byte Show_sprites_left_8 : 1;
-        Byte Show_background : 1;
-        Byte Show_sprites : 1;
+        Byte Render_background_left_8 : 1;
+        Byte Render_sprites_left_8 : 1;
+        Byte Render_background : 1;
+        Byte Render_sprites : 1;
         Byte Emphasize_red : 1;
         Byte Emphasize_green : 1;
         Byte Emphasize_blue : 1;
@@ -42,5 +40,17 @@ typedef union {
     };
     Byte _;
 } PPUSTATUS_reg;
+
+typedef union {
+    struct {
+        Word coarse_x : 5;
+        Word coarse_y : 5;
+        Word nametable_select_x : 1;
+        Word nametable_select_y : 1;
+        Word fine_y : 3;
+        Word __not_used : 1;
+    };
+    Word _;
+} VRAM_ADDR_reg;
 
 #endif // !PPU_REGISTERS_H

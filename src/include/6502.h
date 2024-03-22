@@ -1,5 +1,5 @@
-#ifndef CPU_TYPES_H
-#define CPU_TYPES_H
+#ifndef CPU_6502_H
+#define CPU_6502_H
 
 #include "types.h"
 #include "ppu.h"
@@ -7,7 +7,7 @@
 
 #define NOT_ENOUGH_CYCLES 0
 
-#define MEM_SIZE 0x10000 // 65536 B = 1024 * 64 B = 64 kB 
+#define MEM_SIZE 0x10000        // 65536 B = 1024 * 64 B = 64 kB
 
 typedef struct {
     Byte RAM[2048]; 			// 2KB of RAM ->		$0000 - $07FF
@@ -55,4 +55,4 @@ void load_mapper(CPU * cpu, Mapper * mapper);
 
 void exit_cpu(CPU *cpu);
 
-#endif //CPU_TYPES_H
+#endif //CPU_6502_H
