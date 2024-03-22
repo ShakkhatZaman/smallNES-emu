@@ -22,11 +22,6 @@ int cpu_clock(CPU *cpu) {
         cpu_nmi(cpu);
     }
 
-    //DEBUG
-#ifdef CREATE_LOGS
-    LOG_MESSAGE("vert_blank: %d, PPUADDR: %x\n", cpu->p_ppu->PPUSTATUS.Verticle_blank, cpu->p_ppu->PPUADDR);
-#endif
-
     return 0;
 }
 

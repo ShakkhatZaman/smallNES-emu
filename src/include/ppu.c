@@ -11,24 +11,16 @@
 #include "ppu_registers.h"
 // DEBUG
 #include "debug.h"
+#include "logging.h"
 
 static void ppu_draw(PPU *ppu);
 static void update_vram_address(PPU *ppu);
 //DEBUG
 // static Pattern_row get_pattern_row(PPU *ppu, Byte table_index, Byte tile_num, Byte tile_y);
 // static uint32_t get_pixel_color(PPU *ppu, Byte palette_num, Byte pixel);
+// static void draw_pixel_row(PPU *ppu, Pattern_row pattern_row, uint32_t *buffer, Byte palette_num, int row_x, int y);
 
 void ppu_clock(PPU *ppu) {
-    if (ppu->dots >= DOTS) {
-        ppu->scanlines++;
-        if (ppu->scanlines >= SCANLINES) {
-            ppu->scanlines = -1;
-            ppu->frame_complete = true;
-            SDL_UpdateTexture(ppu->ppu_draw_texture, NULL, ppu->screen_buffer, NES_WIDTH * 4);
-        }
-        ppu->dots = 0;
-    }
-
     if (ppu->dots > -1 && ppu->dots < NES_WIDTH && ppu->scanlines > -1 && ppu->scanlines < NES_HEIGHT) 
         ppu_draw(ppu);
 
@@ -42,7 +34,31 @@ void ppu_clock(PPU *ppu) {
         ppu->PPUSTATUS.Verticle_blank = 1;
         ppu->create_nmi = true;
     }
+
+#ifdef CREATE_LOGS
+    // if (ppu->current_address._ >= 0x2000)
+        LOG_MESSAGE("Dots: %d, scans: %d, v: %x, data: %x, v.nt_x: %x, v.nt_y: %x, v.c_x: %d, v.c_y: %d, v_blank: %d, frame: %d\n",
+                    ppu->dots, ppu->scanlines,
+                    ppu->current_address._,
+                    ppu->PPUDATA,
+                    ppu->current_address.nametable_select_x,
+                    ppu->current_address.nametable_select_y,
+                    ppu->current_address.coarse_x,
+                    ppu->current_address.coarse_y,
+                    ppu->PPUSTATUS.Verticle_blank,
+                    ppu->frame_complete);
+#endif
+
     ppu->dots++;
+    if (ppu->dots >= DOTS) {
+        if (ppu->scanlines >= SCANLINES) {
+            ppu->scanlines = -1;
+            ppu->frame_complete = true;
+            SDL_UpdateTexture(ppu->ppu_draw_texture, NULL, ppu->screen_buffer, NES_WIDTH * 4);
+        }
+        else ppu->scanlines++;
+        ppu->dots = 0;
+    }
 }
 
 uint32_t NES_Palette[64] = {
@@ -61,7 +77,7 @@ static void ppu_draw(PPU *ppu) {
 
     // DEBUG
     // if (ppu->dots && ((ppu->dots/* + ppu->fine_x*/) % 8)) return;
-    if (ppu->dots % 8) return;
+    if ((ppu->dots % 8) != 0) return;
     // if (ppu->PPUMASK.Render_background) {
     Byte Plane_num = ppu_read_byte(ppu, (((Word) ppu->scanlines / 8) << 5) | ((Word) ppu->dots / 8) | 0x2000);
     // Byte Plane_num = ppu_read_byte(ppu, (ppu->current_address._ & 0xFFF) | 0x2000);
@@ -288,6 +304,8 @@ uint32_t get_pixel_color(PPU *ppu, Byte palette_num, Byte pixel) {
     return NES_Palette[pixel_index & 0x3F];
 }
 
+//DEBUG
+// static void draw_pixel_row(PPU *ppu, Pattern_row pattern_row, uint32_t *buffer, Byte palette_num, int row_x, int y) {
 void draw_pixel_row(PPU *ppu, Pattern_row pattern_row, uint32_t *buffer, Byte palette_num, int row_x, int y) {
     for (int i = 7; i > -1; i--) {
         Byte low_bit = pattern_row.LS_Byte & 0x1;
