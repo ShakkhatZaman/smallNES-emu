@@ -7,7 +7,6 @@
 
 #include "ppu_registers.h"
 #include "../cartridge/mapper.h"
-#include "../../types.h"
 
 #define NES_WIDTH 256
 #define NES_HEIGHT 240

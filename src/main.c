@@ -1,7 +1,4 @@
-#include <stdio.h>
 #include <stdbool.h>
-#include <stdint.h>
-#include <stdlib.h>
 #include <sys/time.h>
 
 #define SDL_MAIN_HANDLED

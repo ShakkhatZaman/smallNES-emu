@@ -1,6 +1,4 @@
-#include "../../types.h"
 #include "instructions.h"
-#include "6502.h"
 #include "../ppu/ppu.h"
 
 /*Helper functions */

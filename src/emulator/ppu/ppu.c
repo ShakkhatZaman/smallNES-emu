@@ -1,14 +1,9 @@
-#include <stdbool.h>
-#include <stdint.h>
 #include <stdio.h>
 #include <stdlib.h>
-#include <string.h>
 
 #include "../../utils.h"
-#include "../cartridge/mapper.h"
-#include "../../types.h"
 #include "ppu.h"
-#include "ppu_registers.h"
+#include "../cartridge/mapper.h"
 
 static void ppu_draw(PPU *ppu);
 static Pattern_row get_pattern_row(PPU *ppu, Byte table_index, Byte plane_num, Byte plane_y);

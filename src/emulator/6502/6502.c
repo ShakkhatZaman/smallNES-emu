@@ -1,6 +1,4 @@
-#include <stdbool.h>
 #include <stdio.h>
-#include <string.h>
 
 #include "6502.h"
 #include "instructions.h"
