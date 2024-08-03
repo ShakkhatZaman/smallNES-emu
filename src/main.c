@@ -8,10 +8,10 @@
 #include <SDL2/SDL.h>
 
 #include "utils.h"
-#include "include/6502.h"
-#include "include/ppu.h"
-#include "include/mapper.h"
-#include "include/cartridge.h"
+#include "emulator/6502/6502.h"
+#include "emulator/ppu/ppu.h"
+#include "emulator/cartridge/mapper.h"
+#include "emulator/cartridge/cartridge.h"
 
 #define WINDOW_WIDTH 512
 #define WINDOW_HEIGHT 480
@@ -25,7 +25,7 @@ CPU cpu = {.p_Bus = NULL};
 PPU ppu = {.p_Bus = NULL};
 CPU_Bus cpu_bus;
 PPU_Bus ppu_bus;
-int cycle_count = 0;
+int64_t cycle_count = 0;
 bool emulator_running = false;
 uint64_t current_time;
 double FPS;

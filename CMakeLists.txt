@@ -1,33 +1,29 @@
 cmake_minimum_required(VERSION 3.14)
 project(emulator)
 
+set(CMAKE_BUILD_TYPE Debug)
+set(CMAKE_EXPORT_COMPILE_COMMANDS ON)
+
 set(SOURCE_FILES 
-    src/main.c 
-    src/include/6502.c
-    src/include/cartridge.c
-    src/include/instructions.c
-    src/include/mapper.c
-    src/include/ppu.c
-    src/include/mappers/nrom.c
+    "src/main.c"
+    "src/emulator/6502/6502.c"
+    "src/emulator/6502/instructions.c"
+    "src/emulator/ppu/ppu.c"
+    "src/emulator/cartridge/mapper.c"
+    "src/emulator/cartridge/cartridge.c"
+    "src/emulator/cartridge/mappers/nrom.c"
 )
 
-set(CMAKE_BUILD_TYPE Debug)
+set(LINKING_LIBRARIES
+    "SDL2"
+    "SDL2main"
+    "SDL2_test"
+)
 
 add_executable(${PROJECT_NAME} ${SOURCE_FILES})
 
-if (CMAKE_COMPILER_IS_GNUCC)
-    target_compile_options(${PROJECT_NAME} PRIVATE -Wall -Wextra)
-endif()
+target_include_directories(${PROJECT_NAME} PRIVATE "./src/include/")
+target_link_directories(${PROJECT_NAME} PRIVATE "./src/lib/")
 
-find_package(SDL2 REQUIRED CONFIG REQUIRED COMPONENTS SDL2)
-
-# find_package(SDL2 REQUIRED CONFIG COMPONENTS SDL2main)
-
-#include_directories(${SDL2_INCLUDE_DIRS})
-
-#[[ if(TARGET SDL2::SDL2main)
-target_link_libraries(${PROJECT_NAME} PRIVATE SDL2::SDL2main)
-endif() ]]
-
-target_link_libraries(${PROJECT_NAME} PRIVATE SDL2::SDL2)
+target_link_libraries(${PROJECT_NAME} PRIVATE ${LINKING_LIBRARIES})
 
