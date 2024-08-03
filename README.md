@@ -2,6 +2,8 @@
 
 This is an NES emulator I'm **currently writing** in C.  After learning C for about 4 months I started this as my first project with the expectation of learning other aspects of system programming. So far I've learned quite a bit about the [NES](https://en.wikipedia.org/wiki/Nintendo_Entertainment_System) and the processor ([6502](https://en.wikipedia.org/wiki/MOS_Technology_6502)) that used to work underneath it.
 
+## Current state
+It can only run a select few ROMs because of a timing bug and scrolling isn't fully implemented yet.
 
 ## Tools used
  - GCC-MingW-x86-64
