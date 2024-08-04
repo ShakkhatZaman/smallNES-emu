@@ -3,8 +3,8 @@
 #include <stdlib.h>
 
 #include "../../utils.h"
+#include "../global.h"
 #include "cartridge.h"
-#include "mapper.h"
 
 static int _get_format(uint8_t header[]);
 
@@ -14,7 +14,7 @@ static uint64_t _get_PRG_ROM_size(uint8_t header[], uint8_t format, uint8_t *num
 
 static uint64_t _get_CHR_ROM_size(uint8_t header[], uint8_t format, uint8_t *num_banks);
 
-int load_cartridge(char* filename, Mapper *mapper){
+int load_cartridge(char* filename){
     FILE *nes_file = fopen(filename, "rb");
     if (nes_file == NULL)
         ERROR_RETURN("Unable to open file: \"%s\"", filename);
@@ -32,25 +32,25 @@ int load_cartridge(char* filename, Mapper *mapper){
 
     enum Mirror_type mirroring = (header[6] & 0x1) ? HORIZONTAL : VERTICAL;
 
-    int mapper_status = load_mapper_functions(mapper, Mapper_num, mirroring);
+    int mapper_status = load_mapper_functions(p_mapper, Mapper_num, mirroring);
     if (mapper_status < 0) 
         ERROR_RETURN("Unable to load mapper (mapper_num: %d)", Mapper_num);
 
     if (header[6] & 0x04) fseek(nes_file, 512, SEEK_CUR);
 
-    uint64_t PRG_ROM_SIZE = _get_PRG_ROM_size(header, format, &mapper->PRG_ROM_banks);
-    uint64_t CHR_ROM_SIZE = _get_CHR_ROM_size(header, format, &mapper->CHR_ROM_banks);
+    uint64_t PRG_ROM_SIZE = _get_PRG_ROM_size(header, format, &p_mapper->PRG_ROM_banks);
+    uint64_t CHR_ROM_SIZE = _get_CHR_ROM_size(header, format, &p_mapper->CHR_ROM_banks);
 
-    mapper->PRG_ROM_p = malloc(PRG_ROM_SIZE);
-    if (mapper->PRG_ROM_p == NULL)
+    p_mapper->PRG_ROM_p = malloc(PRG_ROM_SIZE);
+    if (p_mapper->PRG_ROM_p == NULL)
         ERROR_RETURN("Unable to allocate space for PRG_ROM (size: %lld)", PRG_ROM_SIZE);
 
-    mapper->CHR_ROM_p = malloc(CHR_ROM_SIZE);
-    if (mapper->CHR_ROM_p == NULL)
+    p_mapper->CHR_ROM_p = malloc(CHR_ROM_SIZE);
+    if (p_mapper->CHR_ROM_p == NULL)
         ERROR_RETURN("Unable to allocate space for CHR_ROM (size: %lld)", CHR_ROM_SIZE);
 
-    fread(mapper->PRG_ROM_p, 1, PRG_ROM_SIZE, nes_file);
-    fread(mapper->CHR_ROM_p, 1, CHR_ROM_SIZE, nes_file);
+    fread(p_mapper->PRG_ROM_p, 1, PRG_ROM_SIZE, nes_file);
+    fread(p_mapper->CHR_ROM_p, 1, CHR_ROM_SIZE, nes_file);
 
     fclose(nes_file);
 

@@ -1,171 +1,170 @@
 #ifndef INSTRUCTIONS_H
 #define INSTRUCTIONS_H
 
-#include "6502.h"
 #include "../../types.h"
 
 #define NULL_INS {NUL, NUL}
 
 /*Instruction struct*/
 typedef struct{
-    Byte (*address_mode)(CPU *);
-    Byte (*operation)(CPU *);
+    Byte (*address_mode)(void);
+    Byte (*operation)(void);
 } Ins;
 
 extern const Ins ins_table[256];
 
 /* Helper fucntions */
 
-Byte fetch_byte(CPU *cpu);
+Byte fetch_byte(void);
 
-Word fetch_word(CPU *cpu);
+Word fetch_word(void);
 
-void cpu_irq(CPU *cpu);
+void cpu_irq(void);
 
-void cpu_nmi(CPU *cpu);
+void cpu_nmi(void);
 
 /*Addressing modes*/
 
-Byte ABS(CPU *cpu);
+Byte ABS(void);
 
-Byte ABX(CPU *cpu);
+Byte ABX(void);
 
-Byte ABY(CPU *cpu);
+Byte ABY(void);
 
-Byte ACC(CPU *cpu);
+Byte ACC(void);
 
-Byte IMP(CPU *cpu);
+Byte IMP(void);
 
-Byte IMM(CPU *cpu);
+Byte IMM(void);
 
-Byte IND(CPU *cpu);
+Byte IND(void);
 
-Byte IZX(CPU *cpu);
+Byte IZX(void);
 
-Byte IZY(CPU *cpu);
+Byte IZY(void);
 
-Byte REL(CPU *cpu);
+Byte REL(void);
 
-Byte ZP0(CPU *cpu);
+Byte ZP0(void);
 
-Byte ZPX(CPU *cpu);
+Byte ZPX(void);
 
-Byte ZPY(CPU *cpu);
+Byte ZPY(void);
 
 /*Operation functions*/
 
-Byte ADC(CPU *cpu);
+Byte ADC(void);
 
-Byte AND(CPU *cpu);
+Byte AND(void);
 
-Byte ASL(CPU *cpu);
+Byte ASL(void);
 
-Byte BCC(CPU *cpu);
+Byte BCC(void);
 
-Byte BCS(CPU *cpu);
+Byte BCS(void);
 
-Byte BEQ(CPU *cpu);
+Byte BEQ(void);
 
-Byte BIT(CPU *cpu);
+Byte BIT(void);
 
-Byte BMI(CPU *cpu);
+Byte BMI(void);
 
-Byte BNE(CPU *cpu);
+Byte BNE(void);
 
-Byte BPL(CPU *cpu);
+Byte BPL(void);
 
-Byte BRK(CPU *cpu);
+Byte BRK(void);
 
-Byte BVC(CPU *cpu);
+Byte BVC(void);
 
-Byte BVS(CPU *cpu);
+Byte BVS(void);
 
-Byte CLC(CPU *cpu);
+Byte CLC(void);
 
-Byte CLD(CPU *cpu);
+Byte CLD(void);
 
-Byte CLI(CPU *cpu);
+Byte CLI(void);
 
-Byte CLV(CPU *cpu);
+Byte CLV(void);
 
-Byte CMP(CPU *cpu);
+Byte CMP(void);
 
-Byte CPX(CPU *cpu);
+Byte CPX(void);
 
-Byte CPY(CPU *cpu);
+Byte CPY(void);
 
-Byte DEC(CPU *cpu);
+Byte DEC(void);
 
-Byte DEX(CPU *cpu);
+Byte DEX(void);
 
-Byte DEY(CPU *cpu);
+Byte DEY(void);
 
-Byte EOR(CPU *cpu);
+Byte EOR(void);
 
-Byte INC(CPU *cpu);
+Byte INC(void);
 
-Byte INX(CPU *cpu);
+Byte INX(void);
 
-Byte INY(CPU *cpu);
+Byte INY(void);
 
-Byte JMP(CPU *cpu);
+Byte JMP(void);
 
-Byte JSR(CPU *cpu);
+Byte JSR(void);
 
-Byte LDA(CPU *cpu);
+Byte LDA(void);
 
-Byte LDX(CPU *cpu);
+Byte LDX(void);
 
-Byte LDY(CPU *cpu);
+Byte LDY(void);
 
-Byte LSR(CPU *cpu);
+Byte LSR(void);
 
-Byte NOP(CPU *cpu);
+Byte NOP(void);
 
-Byte ORA(CPU *cpu);
+Byte ORA(void);
 
-Byte PHA(CPU *cpu);
+Byte PHA(void);
 
-Byte PHP(CPU *cpu);
+Byte PHP(void);
 
-Byte PLA(CPU *cpu);
+Byte PLA(void);
 
-Byte PLP(CPU *cpu);
+Byte PLP(void);
 
-Byte ROL(CPU *cpu);
+Byte ROL(void);
 
-Byte ROR(CPU *cpu);
+Byte ROR(void);
 
-Byte RTI(CPU *cpu);
+Byte RTI(void);
 
-Byte RTS(CPU *cpu);
+Byte RTS(void);
 
-Byte SBC(CPU *cpu);
+Byte SBC(void);
 
-Byte SEC(CPU *cpu);
+Byte SEC(void);
 
-Byte SED(CPU *cpu);
+Byte SED(void);
 
-Byte SEI(CPU *cpu);
+Byte SEI(void);
 
-Byte STA(CPU *cpu);
+Byte STA(void);
 
-Byte STX(CPU *cpu);
+Byte STX(void);
 
-Byte STY(CPU *cpu);
+Byte STY(void);
 
-Byte TAX(CPU *cpu);
+Byte TAX(void);
 
-Byte TAY(CPU *cpu);
+Byte TAY(void);
 
-Byte TSX(CPU *cpu);
+Byte TSX(void);
 
-Byte TXA(CPU *cpu);
+Byte TXA(void);
 
-Byte TXS(CPU *cpu);
+Byte TXS(void);
 
-Byte TYA(CPU *cpu);
+Byte TYA(void);
 
-Byte NUL(CPU *cpu);
+Byte NUL(void);
 
 #endif

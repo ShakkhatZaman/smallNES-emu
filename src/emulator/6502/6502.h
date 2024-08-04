@@ -2,8 +2,6 @@
 #define CPU_6502_H
 
 #include "../../types.h"
-#include "../ppu/ppu.h"
-#include "../cartridge/mapper.h"
 
 #define NOT_ENOUGH_CYCLES 0
 
@@ -12,7 +10,6 @@
 typedef struct {
     Byte RAM[2048];             // 2KB of RAM ->		$0000 - $07FF
     Byte APU_registers[18];     // APU registers ->		$4000 - $4017
-    Mapper *mapper;
 } CPU_Bus;
 
 typedef struct CPU {
@@ -31,11 +28,8 @@ typedef struct CPU {
     Byte V : 1; // Overfloaw flag
     Byte N : 1; // Negative flag
 
-    // Bus pointer
-    CPU_Bus *p_Bus;
-
-    // PPU pointer
-    PPU *p_ppu;
+    // Bus
+    CPU_Bus Bus;
 
     // Helper variables
     Byte temp_byte;
@@ -43,16 +37,14 @@ typedef struct CPU {
     Byte current_mode;
 } CPU;
 
-void reset_cpu(CPU *cpu, CPU_Bus *cpuBus, PPU *p_ppu);
+void reset_cpu(void);
 
-void init_cpu(CPU *p_cpu, int64_t *cycles);
+void init_cpu(int64_t *cycles);
 
-void execute_cpu_ppu(CPU *p_cpu);
+void execute_cpu_ppu(void);
 
-int cpu_clock(CPU *cpu);
+int cpu_clock(void);
 
-void load_mapper(CPU * cpu, Mapper * mapper);
-
-void exit_cpu(CPU *cpu);
+void exit_cpu(void);
 
 #endif //CPU_6502_H

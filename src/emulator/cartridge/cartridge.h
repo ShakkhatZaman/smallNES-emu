@@ -3,7 +3,7 @@
 
 #include "mapper.h"
 
-int load_cartridge(char* filename, Mapper *mapper);
+int load_cartridge(char* filename);
 
 void free_cartridge(Mapper *mapper);
 

@@ -6,7 +6,6 @@
 #include <SDL2/SDL.h>
 
 #include "ppu_registers.h"
-#include "../cartridge/mapper.h"
 
 #define NES_WIDTH 256
 #define NES_HEIGHT 240
@@ -20,7 +19,6 @@
 typedef struct {
     Byte Nametable[4][1024];// 4KB for 4 nametables ->		$2000 - $2FFF
     Byte Palettes[32];		// 32B for palettes ->			$3F00 - $3FFF
-    Mapper *mapper;
 } PPU_Bus;
 
 typedef struct {
@@ -35,7 +33,7 @@ typedef struct {
     Byte PPUDATA;
     Byte write_latch;
     // Bus
-    PPU_Bus *p_Bus;
+    PPU_Bus Bus;
     // Helper members
     Byte VRAM_increment;
     int dots;
@@ -51,18 +49,18 @@ typedef struct {
     Byte MS_Byte;
 } Pattern_row;
 
-void reset_ppu(PPU *ppu, PPU_Bus *ppu_bus);
+void reset_ppu(void);
 
-int init_ppu(PPU *ppu, SDL_Renderer *renderer);
+int init_ppu(SDL_Renderer *renderer);
 
-void ppu_clock(PPU *ppu);
+void ppu_clock(void);
 
-Byte ppu_read_byte(PPU *p_ppu, Word address);
+Byte ppu_read_byte(Word address);
 
-Byte ppu_write_byte(PPU *p_ppu, Word address, Byte data);
+Byte ppu_write_byte(Word address, Byte data);
 
-Byte cpu_to_ppu_read(PPU *p_ppu, Word address);
+Byte cpu_to_ppu_read(Word address);
 
-Byte cpu_to_ppu_write(PPU *p_ppu, Word address, Byte data);
+Byte cpu_to_ppu_write(Word address, Byte data);
 
 #endif //PPU_H
